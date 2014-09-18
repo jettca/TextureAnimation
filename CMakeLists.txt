@@ -3,7 +3,10 @@ project(TextureSynthesis)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
-add_executable(TextureSynthesis test.cpp)
+add_executable(TextureSynthesis
+    src/test.cpp
+    src/FilterBank.cpp src/FilterBank.h
+)
 target_link_libraries(TextureSynthesis Aquila Ooura_fft)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
