@@ -1,19 +1,23 @@
-#include "aquila/aquila.h"
+#pragma once
+
 #include <vector>
+#include "aquila/aquila.h"
+
+#include "Filter.h"
+#include "Signal.h"
 
 namespace TextureSynthesis
 {
-    typedef std::vector<Aquila::SampleType> Wave;
-
     class FilterBank
     {
     public:
         FilterBank();
 
-        void addFilter(Aquila::SpectrumType filter);
-        std::vector<Wave> apply(Wave wave);
+        void addFilter(std::shared_ptr<Filter> filter);
+        std::vector<Signal> apply(Aquila::SignalSource signal);
+        std::vector<Signal> apply(Aquila::SpectrumType spectrum, double sampleRate);
 
     private:
-        std::vector<Aquila::SpectrumType> filters;
+        std::vector<std::shared_ptr<Filter>> _filters;
     };
 }
