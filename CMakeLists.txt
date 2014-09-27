@@ -18,7 +18,6 @@ include(FindPkgConfig)
 pkg_search_module(SDL2 REQUIRED sdl2)
 pkg_search_module(REQUIRED SDL2_mixer REQUIRED)
 
-include_directories(${SDL2_INCLUDE_DIRS})
 target_link_libraries(TextureSynthesis
     Aquila
     Ooura_fft

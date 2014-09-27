@@ -19,10 +19,11 @@ namespace TextureSynthesis
     public:
         AudioDevice();
         void play(const Signal& signal, std::function<void()> callback);
+        ~AudioDevice();
 
     private:
         std::shared_ptr<UserData> _curUserDataP;
 
-        static void writeAudio(void *_, Uint8 *stream, int len);
+        static void writeAudio(void *userDataVP, Uint8 *stream, int len);
     };
 }

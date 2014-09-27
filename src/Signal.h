@@ -9,10 +9,10 @@ namespace TextureSynthesis
     {
     public:
         Signal(int length, double sampleRate)
-            : _samples(length), _sampleRate(sampleRate)
-        {}
+            : _signal(length), _sampleRate(sampleRate)
+        { }
 
-        std::vector<Aquila::SampleType> _samples;
+        Aquila::SignalType _signal;
         double _sampleRate;
     };
 }

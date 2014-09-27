@@ -1,5 +1,7 @@
 #include "FilterBank.h"
 
+#include <complex>
+
 using namespace TextureSynthesis;
 
 FilterBank::FilterBank()
@@ -31,7 +33,7 @@ std::vector<Signal> FilterBank::apply(Aquila::SpectrumType spectrum, double samp
         filteredSpectrum = Aquila::SpectrumType(spectrum);
         _filters.at(i)->filter(filteredSpectrum, sampleRate);
 
-        fft->ifft(filteredSpectrum, &signal._samples[0]);
+        fft->ifft(filteredSpectrum, signal._signal);
         signals.push_back(signal);
     }
 

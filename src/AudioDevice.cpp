@@ -35,16 +35,17 @@ void AudioDevice::writeAudio(void *userDataVP, Uint8 *stream, int len)
     std::function<void()> callback = userDataP->_callback;
     int *signalPosP = &(userDataP->_signalPos);
 
-    int signalLen = signalP->_samples.size();
+    int signalLen = signalP->_signal.size();
     int streamPos;
 
     for(streamPos = 0; streamPos < len && *signalPosP < signalLen; streamPos++)
-        stream[streamPos] = signalP->_samples[(*signalPosP)++];
+        stream[streamPos] = std::real(signalP->_signal[(*signalPosP)++]);
 
     if(*signalPosP >= signalLen)
     {
         for(; streamPos < len; streamPos++)
             stream[streamPos] = 0;
+        SDL_CloseAudio();
         callback();
     }
 }
