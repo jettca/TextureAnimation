@@ -13,11 +13,11 @@ void FilterBank::addFilter(std::shared_ptr<Filter> filter)
     _filters.push_back(filter);
 }
 
-std::vector<Signal> FilterBank::apply(Aquila::SignalSource signal)
+std::vector<Signal> FilterBank::apply(Signal signal)
 {
-    std::shared_ptr<Aquila::Fft> fft = Aquila::FftFactory::getFft(signal.length());
-    Aquila::SpectrumType spectrum = fft->fft(signal.toArray());
-    return apply(spectrum, signal.getSampleFrequency());
+    std::shared_ptr<Aquila::Fft> fft = Aquila::FftFactory::getFft(signal._signal.size());
+    Aquila::SpectrumType spectrum = fft->fft(signal._signal);
+    return apply(spectrum, signal._sampleRate);
 }
 
 std::vector<Signal> FilterBank::apply(Aquila::SpectrumType spectrum, double sampleRate)

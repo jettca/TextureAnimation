@@ -12,6 +12,7 @@ namespace TextureSynthesis
         Signal(Aquila::SignalSource source);
         void makeAnalytic();
         void makeEnvelope();
+        void pow(double a);
         std::vector<double> realPart();
         std::vector<double> imaginaryPart();
 

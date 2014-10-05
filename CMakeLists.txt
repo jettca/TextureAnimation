@@ -11,6 +11,7 @@ add_executable(TextureSynthesis
     src/LowpassFilter.cpp src/LowpassFilter.h
     src/CochlearFilter.cpp src/CochlearFilter.h
     src/Signal.h src/Signal.cpp
+    src/AuditoryModel.h src/AuditoryModel.cpp
 )
 
 

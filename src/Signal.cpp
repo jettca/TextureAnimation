@@ -38,6 +38,15 @@ void Signal::makeEnvelope()
     }
 }
 
+void Signal::pow(double a)
+{
+    int signalSize = _signal.size();
+    for(int i = 0; i < signalSize; i++)
+    {
+        _signal[i] = std::pow(_signal[i], a);
+    }
+}
+
 std::vector<double> Signal::realPart()
 {
     int signalSize = _signal.size();
