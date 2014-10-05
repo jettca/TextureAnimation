@@ -22,6 +22,8 @@ pkg_search_module(REQUIRED SDL2_mixer REQUIRED)
 target_link_libraries(TextureSynthesis
     Aquila
     Ooura_fft
+    gsl
+    gslcblas
     ${SDL2_LIBRARIES}
 )
 

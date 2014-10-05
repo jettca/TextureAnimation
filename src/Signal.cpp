@@ -5,7 +5,7 @@
 using namespace TextureSynthesis;
 
 Signal::Signal(int length, double sampleRate)
-    : _signal(length), _sampleRate(_sampleRate)
+    : _signal(length), _sampleRate(sampleRate)
 { }
 
 Signal::Signal(Aquila::SignalSource source)
