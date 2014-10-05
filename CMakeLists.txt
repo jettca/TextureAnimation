@@ -10,7 +10,7 @@ add_executable(TextureSynthesis
     src/Filter.cpp src/Filter.h
     src/LowpassFilter.cpp src/LowpassFilter.h
     src/CochlearFilter.cpp src/CochlearFilter.h
-    src/Signal.h
+    src/Signal.h src/Signal.cpp
 )
 
 

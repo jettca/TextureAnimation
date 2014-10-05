@@ -8,9 +8,12 @@ namespace TextureSynthesis
     class Signal
     {
     public:
-        Signal(int length, double sampleRate)
-            : _signal(length), _sampleRate(sampleRate)
-        { }
+        Signal(int length, double sampleRate);
+        Signal(Aquila::SignalSource source);
+        void makeAnalytic();
+        void makeEnvelope();
+        std::vector<double> realPart();
+        std::vector<double> imaginaryPart();
 
         Aquila::SignalType _signal;
         double _sampleRate;
