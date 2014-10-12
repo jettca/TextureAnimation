@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aquila/aquila.h"
+#include "Signal.h"
 
 namespace TextureSynthesis
 {
@@ -10,8 +11,10 @@ namespace TextureSynthesis
         virtual void filter(Aquila::SpectrumType& spectrum,
                 double sampleRate) = 0;
         
-        Aquila::SpectrumType filter(Aquila::SignalSource signal);
+        void filter(const Signal& signal, Aquila::SpectrumType& spectrum);
+        void filter(Signal& signal);
 
         virtual ~Filter() { }
+        static int numApplications;
     };
 }

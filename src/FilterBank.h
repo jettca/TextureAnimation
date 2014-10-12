@@ -14,8 +14,9 @@ namespace TextureSynthesis
         FilterBank();
 
         void addFilter(std::shared_ptr<Filter> filter);
-        std::vector<Signal> apply(Signal signal);
-        std::vector<Signal> apply(Aquila::SpectrumType spectrum, double sampleRate);
+        void apply(const Signal& signal, std::vector<Signal>& outSignals);
+        void apply(const Aquila::SpectrumType& spectrum, double sampleRate,
+                std::vector<Signal>& outSignals);
 
     private:
         std::vector<std::shared_ptr<Filter>> _filters;

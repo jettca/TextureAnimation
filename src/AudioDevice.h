@@ -12,6 +12,7 @@ namespace TextureSynthesis
         const Signal *_signalP;
         std::function<void()> _callback;
         int _signalPos;
+        bool _isPlaying;
     };
 
     class AudioDevice

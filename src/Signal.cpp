@@ -38,6 +38,25 @@ void Signal::makeEnvelope()
     }
 }
 
+void Signal::makeEnvelope(Signal& phase)
+{
+    makeAnalytic();
+
+    int signalSize = _signal.size();
+
+    if(phase._signal.size() != signalSize)
+        phase._signal.resize(signalSize);
+    phase._sampleRate = _sampleRate;
+
+    std::complex<double> envVal;
+    for(int i = 0; i < signalSize; i++)
+    {
+        envVal = std::norm(_signal[i]);
+        phase._signal[i] = _signal[i] / envVal;
+        _signal[i] = envVal;
+    }
+}
+
 void Signal::pow(double a)
 {
     int signalSize = _signal.size();
@@ -47,7 +66,7 @@ void Signal::pow(double a)
     }
 }
 
-std::vector<double> Signal::realPart()
+std::vector<double> Signal::realPart() const
 {
     int signalSize = _signal.size();
     std::vector<double> realSignal(signalSize);
@@ -57,7 +76,7 @@ std::vector<double> Signal::realPart()
     return realSignal;
 }
 
-std::vector<double> Signal::imaginaryPart()
+std::vector<double> Signal::imaginaryPart() const
 {
     int signalSize = _signal.size();
     std::vector<double> imaginarySignal(signalSize);
@@ -65,4 +84,21 @@ std::vector<double> Signal::imaginaryPart()
         imaginarySignal[i] = std::imag(_signal[i]);
 
     return imaginarySignal;
+}
+
+void Signal::set(Signal signal)
+{
+    _sampleRate = signal._sampleRate;
+
+    int oldSize = _signal.size();
+    int newSize = signal._signal.size();
+
+    if(newSize != oldSize)
+        _signal.resize(newSize);
+
+    for(int i = 0; i < oldSize; i++)
+        _signal[i] = signal._signal[i];
+    if(newSize > oldSize)
+        for(int i = oldSize; i < newSize; i++)
+            _signal[i] = signal._signal[i];
 }

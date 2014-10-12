@@ -6,6 +6,9 @@ AudioDevice::AudioDevice()
     : _curUserDataP(NULL)
 { }
 
+AudioDevice::~AudioDevice()
+{ }
+
 void AudioDevice::play(const Signal& signal, std::function<void()> callback)
 {
     _curUserDataP = std::shared_ptr<UserData>(new UserData(&signal, callback));
@@ -38,18 +41,23 @@ void AudioDevice::writeAudio(void *userDataVP, Uint8 *stream, int len)
     int signalLen = signalP->_signal.size();
     int streamPos;
 
-    for(streamPos = 0; streamPos < len && *signalPosP < signalLen; streamPos++)
-        stream[streamPos] = std::real(signalP->_signal[(*signalPosP)++]);
+    short sample;
+    for(streamPos = 0; streamPos < len && *signalPosP < signalLen; streamPos+=2)
+    {
+        sample = (short)std::real(signalP->_signal[*signalPosP]);
+        stream[streamPos] = sample & 0xFF;
+        stream[streamPos + 1] = sample >> 8;
+        (*signalPosP)++;
+    }
 
     if(*signalPosP >= signalLen)
     {
         for(; streamPos < len; streamPos++)
             stream[streamPos] = 0;
-        SDL_CloseAudio();
         callback();
     }
 }
 
 UserData::UserData(const Signal *signalP, std::function<void()> callback)
-    : _signalP(signalP), _callback(callback), _signalPos(0)
+    : _signalP(signalP), _callback(callback), _signalPos(0), _isPlaying(true)
 { }
