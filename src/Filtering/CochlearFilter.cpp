@@ -1,4 +1,4 @@
-#include "CochlearFilter.h"
+#include "Filtering/CochlearFilter.h"
 #include <math.h>
 #include <iostream>
 

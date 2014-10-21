@@ -1,4 +1,4 @@
-#include "Filter.h"
+#include "Filtering/Filter.h"
 
 using namespace TextureSynthesis;
 

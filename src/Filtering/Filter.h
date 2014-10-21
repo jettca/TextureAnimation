@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aquila/aquila.h"
-#include "Signal.h"
+#include "Filtering/Signal.h"
 
 namespace TextureSynthesis
 {

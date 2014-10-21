@@ -1,6 +1,0 @@
-namespace TextureSynthesis
-{
-    class Resampler
-    {
-    }
-}

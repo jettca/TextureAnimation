@@ -1,4 +1,4 @@
-#include "LowpassFilter.h"
+#include "Filtering/LowpassFilter.h"
 #include <iostream>
 
 using namespace TextureSynthesis;

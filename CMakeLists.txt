@@ -5,18 +5,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 add_executable(TextureSynthesis
     src/test.cpp
-    src/AudioDevice.cpp src/AudioDevice.h
-    src/FilterBank.cpp src/FilterBank.h
-    src/Filter.cpp src/Filter.h
-    src/LowpassFilter.cpp src/LowpassFilter.h
-    src/CochlearFilter.cpp src/CochlearFilter.h
-    src/Signal.h src/Signal.cpp
-    src/StatsGenerator.h src/StatsGenerator.cpp
-    src/TextureFilterer.h src/TextureFilterer.cpp
-    src/TextureSynthesizer.h src/TextureSynthesizer.cpp
-    src/Downsampler.h src/Downsampler.cpp
+    src/Synthesis/AudioDevice.cpp src/Synthesis/AudioDevice.h
+    src/Synthesis/StatsGenerator.h src/Synthesis/StatsGenerator.cpp
+    src/Synthesis/TextureFilterer.h src/Synthesis/TextureFilterer.cpp
+    src/Synthesis/TextureSynthesizer.h src/Synthesis/TextureSynthesizer.cpp
+    src/Filtering/FilterBank.cpp src/Filtering/FilterBank.h
+    src/Filtering/Filter.cpp src/Filtering/Filter.h
+    src/Filtering/LowpassFilter.cpp src/Filtering/LowpassFilter.h
+    src/Filtering/CochlearFilter.cpp src/Filtering/CochlearFilter.h
+    src/Filtering/Signal.h src/Filtering/Signal.cpp
+    src/Filtering/Downsampler.h src/Filtering/Downsampler.cpp
 )
-
 
 include(FindPkgConfig)
 pkg_search_module(SDL2 REQUIRED sdl2)
@@ -28,6 +27,10 @@ target_link_libraries(TextureSynthesis
     gsl
     gslcblas
     ${SDL2_LIBRARIES}
+)
+
+include_directories(
+    src
 )
 
 if(CMAKE_COMPILER_IS_GNUCXX)

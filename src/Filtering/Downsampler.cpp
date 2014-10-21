@@ -1,12 +1,12 @@
-#include "Downsampler.h"
-#include "LowpassFilter.h"
+#include "Filtering/Downsampler.h"
+#include "Filtering/LowpassFilter.h"
 
 using namespace TextureSynthesis;
 
-Downsampler::Downsampler(Signal& signal, double appxSampleRate)
+Downsampler::Downsampler(Signal& signal, double targetRate)
     : _fineStructure(signal),
     _newSampleRate(signal._sampleRate /
-        pow(2, (int)log(signal._sampleRate / appxSampleRate) / log(2)))
+        pow(2, (int)(log(signal._sampleRate / targetRate) / log(2))))
 {
     LowpassFilter filter(_newSampleRate / 2);
     filter.filter(signal);
@@ -41,4 +41,13 @@ void Downsampler::revert(Signal& signal)
 double Downsampler::actualSampleRate()
 {
     return _newSampleRate;
+}
+
+std::pair<int, double> Downsampler::newSizeAndRate(int oldSize, double oldRate,
+        double targetRate)
+{
+    double newRate = oldRate / pow(2, (int)(log(oldRate / targetRate) / log(2)));
+    int newSize = (int)(newRate / oldRate * oldSize);
+
+    return std::pair<int, double>(newSize, newRate);
 }

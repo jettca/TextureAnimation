@@ -1,4 +1,4 @@
-#include "AudioDevice.h"
+#include "Synthesis/AudioDevice.h"
 
 using namespace TextureSynthesis;
 

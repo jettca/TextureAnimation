@@ -1,28 +1,28 @@
 #include "StatsGenerator.h"
 
-#include "TextureFilterer.h"
+#include "Synthesis/TextureFilterer.h"
 
 using namespace TextureSynthesis;
 
-void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearSignals,
+void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
         std::vector<std::complex<double>>& statistics)
 {
-
     // Cochlear statistics
 
-    int cochlearSize = cochlearSignals.size();
+    int cochlearSize = cochlearEnvelopes.size();
 
     std::vector<int> correlationDifs { 1, 2, 3, 5, 8, 11, 16, 21 };
 
     std::vector<double> cochlearMeans(cochlearSize);
     std::vector<double> cochlearVariances(cochlearSize);
+    statistics.clear();
 
     double mean, variance;
     std::vector<double> realPart;
     for(int i = 0; i < cochlearSize; i++)
     {
-        realPart = cochlearSignals[i].realPart();
+        realPart = cochlearEnvelopes[i].realPart();
 
         mean = computeMean(realPart);
         cochlearMeans.push_back(mean);
@@ -37,7 +37,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearSignal
         for(int j : correlationDifs)
             if(i - j >= 0)
                 statistics.push_back(crossCorrelation(realPart,
-                            cochlearSignals[i - j].realPart(), mean, cochlearMeans[i - j],
+                            cochlearEnvelopes[i - j].realPart(), mean, cochlearMeans[i - j],
                             variance, cochlearVariances[i - j]));
     }
 
@@ -79,18 +79,6 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearSignal
         }
 }
 
-void StatsGenerator::computeStatistics(const Signal& signal,
-        std::vector<std::complex<double>>& statistics)
-{
-    std::vector<Signal> cochlearSignals;
-    std::vector<std::vector<Signal>> modulationSignals;
-
-    // Compute filtered signals
-    TextureFilterer::auditoryFilter(signal, cochlearSignals, modulationSignals);
-
-    computeStatistics(cochlearSignals, modulationSignals, statistics);
-}
-
 double StatsGenerator::computeMean(const std::vector<double>& data)
 {
     int size = data.size();
@@ -109,7 +97,8 @@ double StatsGenerator::computeVariance(const std::vector<double>& data, double m
     return v / size;
 }
 
-double StatsGenerator::nthMoment(const std::vector<double>& data, int n, double mean, double variance)
+double StatsGenerator::nthMoment(const std::vector<double>& data,
+        int n, double mean, double variance)
 {
     switch(n)
     {

@@ -1,17 +1,17 @@
 #pragma once
 
-#include "Filter.h"
+#include "Filtering/Filter.h"
 
 namespace TextureSynthesis
 {
-    class CochlearFilter : public Filter
+    class LowpassFilter : public Filter
     {
     public:
-        CochlearFilter(double centerFrequency);
+        LowpassFilter(double lowpassFrequency);
         using Filter::filter;
         void filter(Aquila::SpectrumType& spectrum, double sampleRate);
 
     private:
-        double _centerFrequency;
+        double _lowpassFrequency;
     };
 }

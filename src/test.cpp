@@ -1,6 +1,6 @@
 #include "aquila/aquila.h"
-#include "AudioDevice.h"
-#include "TextureSynthesizer.h"
+#include "Synthesis/AudioDevice.h"
+#include "Synthesis/TextureSynthesizer.h"
 
 #include <iostream>
 #include <cmath>
@@ -36,6 +36,7 @@ int main(int argc, char **argv)
 
     Aquila::WaveFile input(argv[1]);
     int sourceLen = pow(2, (int)(log(input.getSamplesCount()) / log(2)));
+    sourceLen = std::min(sourceLen, (int)pow(2, 12));
     double sampleRate = input.getSampleFrequency();
     
     int numChannels = input.getChannelsNum();

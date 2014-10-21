@@ -46,13 +46,18 @@ void Signal::makeEnvelope(Signal& phase)
 
     if(phase._signal.size() != signalSize)
         phase._signal.resize(signalSize);
+
     phase._sampleRate = _sampleRate;
 
     std::complex<double> envVal;
+    std::complex<double> zero(0, 0);
     for(int i = 0; i < signalSize; i++)
     {
         envVal = std::norm(_signal[i]);
-        phase._signal[i] = _signal[i] / envVal;
+        if(envVal == zero)
+            phase._signal[i] = 0;
+        else
+            phase._signal[i] = _signal[i] / envVal;
         _signal[i] = envVal;
     }
 }
@@ -62,7 +67,8 @@ void Signal::pow(double a)
     int signalSize = _signal.size();
     for(int i = 0; i < signalSize; i++)
     {
-        _signal[i] = std::pow(_signal[i], a);
+        if(std::real(_signal[i]) != 0 && std::imag(_signal[i]) != 0)
+            _signal[i] = std::pow(_signal[i], a);
     }
 }
 

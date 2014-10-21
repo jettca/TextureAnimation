@@ -3,8 +3,8 @@
 #include <vector>
 #include "aquila/aquila.h"
 
-#include "Filter.h"
-#include "Signal.h"
+#include "Filtering/Filter.h"
+#include "Filtering/Signal.h"
 
 namespace TextureSynthesis
 {
