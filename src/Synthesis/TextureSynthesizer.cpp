@@ -85,21 +85,22 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
         iter++;
         std::cout << "iter: " << iter << "\n";
         status = gsl_multimin_fdfminimizer_iterate(s);
-
-        if (status)
-            break;
-
-        status = gsl_multimin_test_gradient (s->gradient, pow(2, 10));
     }
     while (status == GSL_CONTINUE && iter < 5);
+
+//    TODO: Fix recombining!!
+//    outSignal.set(_targetSignal);
+//    _curOptimizationData.textureFilterer.auditoryFilter(outSignal,
+//            _curOptimizationData.cochlearEnvelopes, _curOptimizationData.modulationSignals,
+//            true);
 
     // Convert results into output signal
     _curOptimizationData.textureFilterer.recombine(_curOptimizationData.cochlearEnvelopes,
             outSignal);
 
     // Cleanup
-    gsl_multimin_fdfminimizer_free(s);
-    gsl_vector_free(init);
+//    gsl_multimin_fdfminimizer_free(s);
+//    gsl_vector_free(init);
 }
 
 double TextureSynthesizer::distanceFromTarget(const gsl_vector *v, void *params)

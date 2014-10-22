@@ -8,7 +8,7 @@ Signal::Signal(int length, double sampleRate)
     : _signal(length), _sampleRate(sampleRate)
 { }
 
-Signal::Signal(Aquila::SignalSource source)
+Signal::Signal(const Aquila::SignalSource& source)
     : _signal(source.length()), _sampleRate(source.getSampleFrequency())
 {
     int signalSize = _signal.size();
@@ -90,7 +90,7 @@ std::vector<double> Signal::imaginaryPart() const
     return imaginarySignal;
 }
 
-void Signal::set(Signal signal)
+void Signal::set(const Signal& signal)
 {
     _sampleRate = signal._sampleRate;
 
@@ -100,6 +100,6 @@ void Signal::set(Signal signal)
     if(newSize != oldSize)
         _signal.resize(newSize);
 
-    for(int i = oldSize; i < newSize; i++)
+    for(int i = 0; i < newSize; i++)
         _signal[i] = signal._signal[i];
 }

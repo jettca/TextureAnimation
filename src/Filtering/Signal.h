@@ -9,7 +9,7 @@ namespace TextureSynthesis
     {
     public:
         Signal(int length, double sampleRate);
-        Signal(Aquila::SignalSource source);
+        Signal(const Aquila::SignalSource& source);
         void makeAnalytic();
         void makeEnvelope();
         void makeEnvelope(Signal& phase);
@@ -17,7 +17,7 @@ namespace TextureSynthesis
         std::vector<double> realPart() const;
         std::vector<double> imaginaryPart() const;
 
-        void set(Signal signal);
+        void set(const Signal& signal);
 
         Aquila::SignalType _signal;
         double _sampleRate;

@@ -1,6 +1,7 @@
 #include "aquila/aquila.h"
 #include "Synthesis/AudioDevice.h"
 #include "Synthesis/TextureSynthesizer.h"
+#include "Filtering/Downsampler.h"
 
 #include <iostream>
 #include <cmath>
@@ -40,7 +41,7 @@ int main(int argc, char **argv)
     double sampleRate = input.getSampleFrequency();
     
     int numChannels = input.getChannelsNum();
-    int maxValue = pow(2, input.getBitsPerSample() - 1);
+    int maxValue = pow(2, input.getBitsPerSample() - 1) - 1;
     double channelAvg;
     Signal sourceSignal(sourceLen, sampleRate);
     for(int i = 0; i < sourceLen; i++)
@@ -54,6 +55,16 @@ int main(int argc, char **argv)
     TextureSynthesizer synthesizer(sourceSignal);
     Signal outSignal(sourceLen, sampleRate);
     synthesizer.synthesize(outSignal);
+
+    for(int i = 0; i < outSignal._signal.size(); i++)
+    {
+        if(std::real(outSignal._signal[i]) >= 1)
+            outSignal._signal[i] = maxValue;
+        else if(std::real(outSignal._signal[i]) <= -1)
+            outSignal._signal[i] = -maxValue;
+        else
+            outSignal._signal[i] *= maxValue;
+    }
 
     if(makeWaveFile)
     {
