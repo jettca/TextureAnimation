@@ -32,6 +32,6 @@ namespace TextureSynthesis
 
         std::vector<Downsampler> _downsamplers;
         std::vector<Signal> _subbandPhases;
-        double _cochlearExponent;
+        static double _cochlearExponent;
     };
 }

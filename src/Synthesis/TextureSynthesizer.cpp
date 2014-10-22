@@ -21,13 +21,16 @@ void OptimizationData::initialize(TextureSynthesizer& synthesizer,
     }
 
     // Initialize target statistics from target signal
-    textureFilterer.auditoryFilter(initialSignal, cochlearEnvelopes,
+    textureFilterer.auditoryFilter(synthesizer._targetSignal, cochlearEnvelopes,
             modulationSignals, true);
     statsGenerator.computeStatistics(cochlearEnvelopes, modulationSignals,
             targetStats);
 
     // Initialize temporary statistics
-    currentStats = std::vector<std::complex<double>>(targetStats.size());
+    textureFilterer.auditoryFilter(initialSignal, cochlearEnvelopes,
+            modulationSignals, false);
+    statsGenerator.computeStatistics(cochlearEnvelopes, modulationSignals,
+            currentStats);
 }
 
 TextureSynthesizer::TextureSynthesizer(const Signal& targetSignal) :
@@ -50,7 +53,7 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
     outSignal._signal.resize(pow(2, (int)(log(outSignal._signal.size()) / log(2))));
     srand(time(nullptr));
     for(int i = 0; i < outSignal._signal.size(); i++)
-        outSignal._signal[i] = 2 * rand() / (double)RAND_MAX - 1;
+        outSignal._signal[i] = 2 * (rand() / (double)RAND_MAX) - 1;
 
     // Initialize the optimization data for this synthesize call
     _curOptimizationData.initialize(*this, outSignal, downsampleSize, downsampleRate);
@@ -118,8 +121,6 @@ double TextureSynthesizer::distanceFromTarget(const gsl_vector *v, void *params)
 
 double TextureSynthesizer::distanceFromTarget(OptimizationData *data)
 {
-    std::cout << "computing distance\n";
-
     // Compute new modulation signals and statistics from updated envelopes
     data->textureFilterer.modulationFilter(data->cochlearEnvelopes, data->modulationSignals);
     data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
@@ -131,12 +132,11 @@ double TextureSynthesizer::distanceFromTarget(OptimizationData *data)
     int numStats = data->targetStats.size();
     for(int i = 0; i < numStats; i++)
     {
-        difference = data->targetStats.at(i) - data->currentStats.at(i);
+        difference = data->currentStats.at(i) - data->targetStats.at(i);
         distance += pow(std::real(difference), 2) + pow(std::imag(difference), 2);
     }
 
     // Return result
-    std::cout << "result: " << distance << "\n";
     return distance;
 }
 
@@ -158,16 +158,13 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
 
     // Calculate initial objective function value
     double d1 = distanceFromTarget(data);
-    std::cout << "Starting distance: " << d1 << "\n";
+    std::cout << "Starting distance is " << d1 << "\n";
 
     // Compute change in objective function value after changing every value in every envelope
     double d2, delta;
     for(int i = 0; i < numEnvelopes; i++)
         for(int j = 0; j < envelopeSize; j++)
         {
-            std::cout << numGradients << ": " << i << "." << j << " of "
-                << numEnvelopes << "." << envelopeSize << "\n";
-
             // Make slight change to argument
             delta = std::real(data->cochlearEnvelopes[i]._signal[j]) * .05;
             data->cochlearEnvelopes[i]._signal[j] += delta;
@@ -179,7 +176,9 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
             // Undo change
             data->cochlearEnvelopes[i]._signal[j] -= delta;
 
-            std::cout << "ds/di: " << (d2 - d1) / delta << "\n";
+            std::cout << numGradients << ": " << i << "." << j << " of "
+                << numEnvelopes << "." << envelopeSize << " is " << d2 << " with rate " << 
+                (d2 - d1) / delta << "\n";
         }
 }
 

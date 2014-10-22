@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
     bool makeWaveFile = false;
     std::string outfile;
-    if(argc < 2)
+    if(argc < 2 || argc > 3)
     {
         std::cerr << "Usage: TextureAnimation <input file> [<output file>]\n";
         return 1;
@@ -40,14 +40,14 @@ int main(int argc, char **argv)
     double sampleRate = input.getSampleFrequency();
     
     int numChannels = input.getChannelsNum();
+    int maxValue = pow(2, input.getBitsPerSample() - 1);
     double channelAvg;
-
     Signal sourceSignal(sourceLen, sampleRate);
     for(int i = 0; i < sourceLen; i++)
     {
         channelAvg = 0;
         for(int j = 0; j < numChannels; j++)
-            channelAvg += input.sample(i);
+            channelAvg += input.sample(i) / maxValue;
         sourceSignal._signal[i] = channelAvg / numChannels;
     }
 

@@ -33,9 +33,7 @@ void Signal::makeEnvelope()
     makeAnalytic();
     int signalSize = _signal.size();
     for(int i = 0; i < signalSize; i++)
-    {
         _signal[i] = std::norm(_signal[i]);
-    }
 }
 
 void Signal::makeEnvelope(Signal& phase)
@@ -102,9 +100,6 @@ void Signal::set(Signal signal)
     if(newSize != oldSize)
         _signal.resize(newSize);
 
-    for(int i = 0; i < oldSize; i++)
+    for(int i = oldSize; i < newSize; i++)
         _signal[i] = signal._signal[i];
-    if(newSize > oldSize)
-        for(int i = oldSize; i < newSize; i++)
-            _signal[i] = signal._signal[i];
 }

@@ -8,6 +8,7 @@ using namespace TextureSynthesis;
 double TextureFilterer::targetDownsampleRate = 400;
 int TextureFilterer::numCochlearEnvelopes = 32;
 int TextureFilterer::numModulationSignals = 20;
+double TextureFilterer::_cochlearExponent = -0.3;
 
 TextureFilterer::TextureFilterer() :
     _downsamplers(),
@@ -23,6 +24,9 @@ void TextureFilterer::auditoryFilter(const Signal& signal,
     generateCochlearBank(cochlearBank);
 
     cochlearBank.apply(signal, cochlearEnvelopes);
+    cochlearEnvelopes[0].makeEnvelope();
+    Downsampler(cochlearEnvelopes[0], targetDownsampleRate);
+    cochlearEnvelopes[0].pow(_cochlearExponent);
 
     int numCochlearEnvelopes = cochlearEnvelopes.size();
 

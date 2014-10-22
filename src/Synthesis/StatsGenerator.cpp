@@ -10,6 +10,9 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 {
     // Cochlear statistics
 
+    int signalLength = cochlearEnvelopes.at(0)._signal.size();
+    double sampleRate = cochlearEnvelopes.at(0)._sampleRate;
+
     int cochlearSize = cochlearEnvelopes.size();
 
     std::vector<int> correlationDifs { 1, 2, 3, 5, 8, 11, 16, 21 };
@@ -70,19 +73,32 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                             modulationSignals[i][n].realPart(),
                             modulationSignals[j][n].realPart(),
                             modulationVariances[i][n], modulationVariances[j][n]));
+
+    int numC2s = 6;
+    std::vector<Signal> analyticModSignals;
+    for(int n = 0; n <= numC2s; n++)
+        analyticModSignals.push_back(Signal(signalLength, sampleRate));
+
     for(int i = 0; i < cochlearSize; i++)
-        for(int n = 0; n < 6; n++)
+    {
+        for(int n = 0; n <= numC2s; n++)
         {
-            statistics.push_back(c2ModulationCorrelation(modulationSignals[i][n],
-                    modulationSignals[i][n + 1], modulationVariances[i][n],
+            analyticModSignals[n].set(modulationSignals[i][n]);
+            analyticModSignals[n].makeAnalytic();
+        }
+        for(int n = 0; n < numC2s; n++)
+        {
+            statistics.push_back(c2ModulationCorrelation(analyticModSignals[n],
+                    analyticModSignals[n + 1], modulationVariances[i][n],
                     modulationVariances[i][n + 1]));
         }
+    }
 }
 
 double StatsGenerator::computeMean(const std::vector<double>& data)
 {
     int size = data.size();
-    double m;
+    double m = 0;
     for(int i = 0; i < size; i++)
         m += data[i];
     return m / size;
@@ -91,7 +107,7 @@ double StatsGenerator::computeMean(const std::vector<double>& data)
 double StatsGenerator::computeVariance(const std::vector<double>& data, double mean)
 {
     int size = data.size();
-    double v;
+    double v = 0;
     for(int i = 0; i < size; i++)
         v += (data[i] - mean) * (data[i] - mean);
     return v / size;
@@ -154,13 +170,10 @@ double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
         return c / (size * variance1 * variance2);
 }
 
-std::complex<double> StatsGenerator::c2ModulationCorrelation(Signal signal1, Signal signal2,
-        double variance1, double variance2)
+std::complex<double> StatsGenerator::c2ModulationCorrelation(const Signal& signal1,
+        const Signal& signal2, double variance1, double variance2)
 {
     int size = std::min(signal1._signal.size(), signal2._signal.size());
-
-    signal1.makeAnalytic();
-    signal2.makeAnalytic();
 
     std::complex<double> c = 0;
     for(int i = 0; i < size; i++)

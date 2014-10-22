@@ -28,8 +28,8 @@ namespace TextureSynthesis
         double c1ModulationCorrelation(const std::vector<double>& data1,
                 const std::vector<double>& data2, double variance1, double variance2);
 
-        std::complex<double> c2ModulationCorrelation(Signal signal1, Signal signal2,
-                double variance1, double variance2);
+        std::complex<double> c2ModulationCorrelation(const Signal& signal1,
+                const Signal& signal2, double variance1, double variance2);
 
         double computePower(const std::vector<double>& data, double variance);
     };
