@@ -29,15 +29,14 @@ int main(int argc, char **argv)
         std::cerr << "Usage: TextureAnimation <input file> [<output file>]\n";
         return 1;
     }
-    if(argc > 2)
+    else if(argc == 3)
     {
         makeWaveFile = true;
         outfile = argv[2];
     }
 
     Aquila::WaveFile input(argv[1]);
-    int sourceLen = pow(2, (int)(log(input.getSamplesCount()) / log(2)));
-    sourceLen = std::min(sourceLen, (int)pow(2, 12));
+    int sourceLen = std::min(pow(2, (int)(log(input.getSamplesCount()) / log(2))), pow(2, 12));
     double sampleRate = input.getSampleFrequency();
     
     int numChannels = input.getChannelsNum();

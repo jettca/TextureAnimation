@@ -87,6 +87,7 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
         status = gsl_multimin_fdfminimizer_iterate(s);
     }
     while (status == GSL_CONTINUE && iter < 5);
+    std::cout << "End status: " << status << "\n";
 
 //    TODO: Fix recombining!!
 //    outSignal.set(_targetSignal);
@@ -99,8 +100,8 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
             outSignal);
 
     // Cleanup
-//    gsl_multimin_fdfminimizer_free(s);
-//    gsl_vector_free(init);
+    gsl_multimin_fdfminimizer_free(s);
+    gsl_vector_free(init);
 }
 
 double TextureSynthesizer::distanceFromTarget(const gsl_vector *v, void *params)
