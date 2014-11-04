@@ -3,42 +3,44 @@
 
 using namespace TextureSynthesis;
 
-Downsampler::Downsampler(Signal& signal, double targetRate)
-    : _fineStructure(signal),
-    _newSampleRate(signal._sampleRate /
-        pow(2, (int)(log(signal._sampleRate / targetRate) / log(2))))
+Downsampler::Downsampler(Signal& signal, double targetRate):
+    _fineStructure(signal),
+    _newSampleRate(signal.sampleRate /
+        pow(2, (int)(log(signal.sampleRate / targetRate) / log(2))))
 {
+    int oldSize = signal.size();
+
+    // Apply a lowpass filter to obtain the fine structure
     LowpassFilter filter(_newSampleRate / 2);
     filter.filter(signal);
+    for(int i = 0; i < oldSize; i++)
+        _fineStructure[i] -= signal[i];
 
-    int oldSize = signal._signal.size();
-    int newSize = (int)(_newSampleRate / signal._sampleRate * oldSize);
-
-    for(int i = 0; i < signal._signal.size(); i++)
-        _fineStructure._signal[i] -= signal._signal[i];
-
-    double sizeRatio = signal._signal.size() / newSize;
-
+    // Fill values into new positions
+    int newSize = (int)(_newSampleRate / signal.sampleRate * oldSize);
+    double sizeRatio = oldSize / newSize;
     for(int i = 0; i < newSize; i++)
-        signal._signal[i] = signal._signal.at((int)(sizeRatio * i));
+        signal[i] = signal[(int)(sizeRatio * i)];
 
-    signal._signal.resize(std::min(newSize, (int)signal._signal.size()));
-    signal._sampleRate = _newSampleRate;
+    // Set the new size and sample rate
+    signal.resize(std::min(newSize, oldSize));
+    signal.sampleRate = _newSampleRate;
 }
 
-void Downsampler::revert(Signal& signal)
+void Downsampler::revert(Signal& signal) const
 {
-    int revertedSize = _fineStructure._signal.size();
-    signal._signal.resize(revertedSize);
-    signal._sampleRate = _fineStructure._sampleRate;
+    // Resize and set the sample rate on the signal
+    int revertedSize = _fineStructure.size();
+    signal.resize(revertedSize);
+    signal.sampleRate = _fineStructure.sampleRate;
 
-    double sizeRatio = signal._signal.size() / revertedSize;
-
+    // Move the values to their new positions and add the fine structure
+    double sizeRatio = signal.size() / revertedSize;
     for(int i = revertedSize - 1; i >= 0; i--)
-        signal._signal[i] = signal._signal[sizeRatio * i] + _fineStructure._signal[i];
+        signal[i] = signal[sizeRatio * i] + _fineStructure[i];
 }
 
-double Downsampler::actualSampleRate()
+double Downsampler::actualSampleRate() const
 {
     return _newSampleRate;
 }

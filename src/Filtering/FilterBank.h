@@ -17,6 +17,7 @@ namespace TextureSynthesis
         void apply(const Signal& signal, std::vector<Signal>& outSignals);
         void apply(const Aquila::SpectrumType& spectrum, double sampleRate,
                 std::vector<Signal>& outSignals);
+        void apply(Signal& signal, int index);
 
     private:
         std::vector<std::shared_ptr<Filter>> _filters;

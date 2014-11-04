@@ -11,8 +11,8 @@
 
 using namespace TextureSynthesis;
 
+// Handles playback loop
 static bool stillPlaying = true;
-
 void donePlayingCallback()
 {
     stillPlaying = false;
@@ -20,8 +20,10 @@ void donePlayingCallback()
 
 int main(int argc, char **argv)
 {
-    feenableexcept(FE_INVALID | FE_OVERFLOW);
+    // TODO: fix bad sound ??
+    feenableexcept(FE_INVALID | FE_OVERFLOW);   // enable floating point exceptions
 
+    // Handle input args
     bool makeWaveFile = false;
     std::string outfile;
     if(argc < 2 || argc > 3)
@@ -35,6 +37,7 @@ int main(int argc, char **argv)
         outfile = argv[2];
     }
 
+    // Load input file into Signal object with power of 2 length
     Aquila::WaveFile input(argv[1]);
     int sourceLen = std::min(pow(2, (int)(log(input.getSamplesCount()) / log(2))), pow(2, 12));
     double sampleRate = input.getSampleFrequency();
@@ -48,23 +51,26 @@ int main(int argc, char **argv)
         channelAvg = 0;
         for(int j = 0; j < numChannels; j++)
             channelAvg += input.sample(i) / maxValue;
-        sourceSignal._signal[i] = channelAvg / numChannels;
+        sourceSignal[i] = channelAvg / numChannels;
     }
 
+    // Synthesize new signal
     TextureSynthesizer synthesizer(sourceSignal);
     Signal outSignal(sourceLen, sampleRate);
     synthesizer.synthesize(outSignal);
 
-    for(int i = 0; i < outSignal._signal.size(); i++)
+    // Clip new signal for playback
+    for(int i = 0; i < outSignal.size(); i++)
     {
-        if(std::real(outSignal._signal[i]) >= 1)
-            outSignal._signal[i] = maxValue;
-        else if(std::real(outSignal._signal[i]) <= -1)
-            outSignal._signal[i] = -maxValue;
+        if(std::real(outSignal[i]) >= 1)
+            outSignal[i] = maxValue;
+        else if(std::real(outSignal[i]) <= -1)
+            outSignal[i] = -maxValue;
         else
-            outSignal._signal[i] *= maxValue;
+            outSignal[i] *= maxValue;
     }
 
+    // Play back or write file
     if(makeWaveFile)
     {
         Aquila::SignalSource output(outSignal.realPart(), sampleRate);

@@ -5,11 +5,11 @@
 using namespace TextureSynthesis;
 
 Signal::Signal(int length, double sampleRate)
-    : _signal(length), _sampleRate(sampleRate)
+    : _signal(length), sampleRate(sampleRate)
 { }
 
 Signal::Signal(const Aquila::SignalSource& source)
-    : _signal(source.length()), _sampleRate(source.getSampleFrequency())
+    : _signal(source.length()), sampleRate(source.getSampleFrequency())
 {
     int signalSize = _signal.size();
     for(int i = 0; i < signalSize; i++)
@@ -45,7 +45,7 @@ void Signal::makeEnvelope(Signal& phase)
     if(phase._signal.size() != signalSize)
         phase._signal.resize(signalSize);
 
-    phase._sampleRate = _sampleRate;
+    phase.sampleRate = sampleRate;
 
     std::complex<double> envVal;
     std::complex<double> zero(0, 0);
@@ -92,7 +92,7 @@ std::vector<double> Signal::imaginaryPart() const
 
 void Signal::set(const Signal& signal)
 {
-    _sampleRate = signal._sampleRate;
+    sampleRate = signal.sampleRate;
 
     int oldSize = _signal.size();
     int newSize = signal._signal.size();
@@ -102,4 +102,34 @@ void Signal::set(const Signal& signal)
 
     for(int i = 0; i < newSize; i++)
         _signal[i] = signal._signal[i];
+}
+
+std::complex<double>& Signal::operator[](const int index)
+{
+    return _signal[index];
+}
+
+const std::complex<double>& Signal::operator[](const int index) const
+{
+    return _signal[index];
+}
+
+size_t Signal::size() const
+{
+    return _signal.size();
+}
+
+void Signal::resize(size_t size)
+{
+    _signal.resize(size);
+}
+
+Aquila::SignalType& Signal::samples()
+{
+    return _signal;
+}
+
+const Aquila::SignalType& Signal::samples() const
+{
+    return _signal;
 }

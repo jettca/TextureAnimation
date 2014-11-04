@@ -5,11 +5,6 @@
 
 using namespace TextureSynthesis;
 
-double TextureFilterer::targetDownsampleRate = 400;
-int TextureFilterer::numCochlearEnvelopes = 32;
-int TextureFilterer::numModulationSignals = 20;
-double TextureFilterer::_cochlearExponent = -0.3;
-
 TextureFilterer::TextureFilterer() :
     _downsamplers(),
     _subbandPhases()
@@ -20,96 +15,131 @@ void TextureFilterer::auditoryFilter(const Signal& signal,
         std::vector<std::vector<Signal>>& modulationSignals,
         bool makeRecombinable)
 {
-    FilterBank cochlearBank;
-    generateCochlearBank(cochlearBank);
+    // Generate and apply cochlear filter bank
+    _cochlearBank.apply(signal, cochlearEnvelopes);
 
-    cochlearBank.apply(signal, cochlearEnvelopes);
-    cochlearEnvelopes[0].makeEnvelope();
-    Downsampler(cochlearEnvelopes[0], targetDownsampleRate);
-    cochlearEnvelopes[0].pow(_cochlearExponent);
-
-    int numCochlearEnvelopes = cochlearEnvelopes.size();
-
-    Signal subbandPhase(signal._signal.size(), signal._sampleRate);
+    // Initialize data for recombining envelopes
+    Signal subbandPhase(signal.size(), signal.sampleRate);
     if(makeRecombinable)
     {
         _downsamplers.clear();
         _subbandPhases.clear();
     }
-    for(int i = 0; i < numCochlearEnvelopes; i++)
+    
+    // Convert filtered signals into downsampled envelopes
+    for(int i = 0; i < _numCochlearEnvelopes; i++)
     {
-        cochlearEnvelopes[i].makeEnvelope(subbandPhase);
         if(makeRecombinable)
         {
+            cochlearEnvelopes[i].makeEnvelope(subbandPhase);
             _subbandPhases.push_back(subbandPhase);
-            _downsamplers.push_back(Downsampler(cochlearEnvelopes[i], targetDownsampleRate));
+            _downsamplers.push_back(Downsampler(cochlearEnvelopes[i], _targetDownsampleRate));
         }
         else
-            Downsampler(cochlearEnvelopes[i], targetDownsampleRate);
+        {
+            cochlearEnvelopes[i].makeEnvelope();
+            Downsampler(cochlearEnvelopes[i], _targetDownsampleRate);
+        }
+
         cochlearEnvelopes[i].pow(_cochlearExponent);
     }
 
+    // Generate modulation signals
     modulationFilter(cochlearEnvelopes, modulationSignals);
 }
 
 void TextureFilterer::modulationFilter(const std::vector<Signal>& cochlearEnvelopes,
-        std::vector<std::vector<Signal>>& modulationSignals)
+        std::vector<std::vector<Signal>>& modulationSignals) const
 {
-    FilterBank modulationBank;
-    generateModulationBank(modulationBank);
-    int numCochlearEnvelopes = cochlearEnvelopes.size();
-    if(modulationSignals.size() < numCochlearEnvelopes)
-        modulationSignals.resize(numCochlearEnvelopes);
-    for(int i = 0; i < numCochlearEnvelopes; i++)
-    {
-        modulationBank.apply(cochlearEnvelopes[i], modulationSignals[i]);
-    }
+    // Resize output list if necessary
+    if(modulationSignals.size() < _numCochlearEnvelopes)
+        modulationSignals.resize(_numCochlearEnvelopes);
+
+    // Apply filter bank to all envelopes
+    for(int i = 0; i < _numCochlearEnvelopes; i++)
+        _modulationBank.apply(cochlearEnvelopes[i], modulationSignals[i]);
 }
 
-void TextureFilterer::recombine(std::vector<Signal>& cochlearEnvelopes,
-        Signal& combinedSignal)
+void TextureFilterer::recombine(std::vector<Signal> cochlearEnvelopes,
+        Signal& combinedSignal) const
 {
-    int signalSize = combinedSignal._signal.size();
+    // Initialize combined signal to zeros
+    int signalSize = combinedSignal.size();
     for(int j = 0; j < signalSize; j++)
-        combinedSignal._signal[j] = 0;
+        combinedSignal[j] = 0;
 
-    int numEnvelopes = cochlearEnvelopes.size();
-    for(int i = 0; i < numEnvelopes; i++)
+    // Invert power, upsample, and add envelopes and their phases to the combined signal
+    for(int i = 0; i < _numCochlearEnvelopes; i++)
     {
-        cochlearEnvelopes[i].pow(-_cochlearExponent);
+        cochlearEnvelopes[i].pow(_oneOverCochlearExponent);
         _downsamplers[i].revert(cochlearEnvelopes[i]);
         for(int j = 0; j < signalSize; j++)
-            combinedSignal._signal[j] += std::real(cochlearEnvelopes[i]._signal[j] *
-                _subbandPhases[i]._signal[j]);
+            cochlearEnvelopes[i][j] *= _subbandPhases[i][j];
+
+        // Reapply filter and sum to the combined signal
+        _cochlearBank.apply(cochlearEnvelopes[i], i);
+        for(int j = 0; j < signalSize; j++)
+            combinedSignal[j] += cochlearEnvelopes[i][j];
     }
 }
 
-void TextureFilterer::generateCochlearBank(FilterBank& cochlearBank)
+FilterBank TextureFilterer::generateCochlearBank()
 {
-    Filter *filter;
+    FilterBank cochlearBank;
 
-    for(int i = 1; i <= numCochlearEnvelopes; i++)
+    std::shared_ptr<Filter> filter;
+    for(int i = 1; i <= _numCochlearEnvelopes; i++)
     {
-        filter = (Filter*)(new CochlearFilter(erbsInverse(i)));
+        filter = std::shared_ptr<Filter>((Filter*)(new CochlearFilter(erbsInverse(i))));
         cochlearBank.addFilter(std::shared_ptr<Filter>(filter));
     }
+
+    return cochlearBank;
 }
 
-void TextureFilterer::generateModulationBank(FilterBank& modulationBank)
+FilterBank TextureFilterer::generateModulationBank()
 {
+    FilterBank modulationBank;
+
     double scalar = 4.112 * exp(-7);
     double offset = 0.5 - scalar;
 
     Filter *filter;
 
-    for(int i = 0; i < numModulationSignals; i++)
+    for(int i = 0; i < _numModulationSignals; i++)
     {
         filter = (Filter*)(new CochlearFilter(scalar * exp(i) + offset));
         modulationBank.addFilter(std::shared_ptr<Filter>(filter));
     }
+
+    return modulationBank;
 }
 
 double TextureFilterer::erbsInverse(int numFilters)
 {
     return 676170.4 / (47.06538 - exp(0.08950404 * numFilters)) - 14678.49;
 }
+
+int TextureFilterer::numCochlearEnvelopes()
+{
+    return _numCochlearEnvelopes;
+}
+
+int TextureFilterer::numModulationSignals()
+{
+    return _numModulationSignals;
+}
+
+double TextureFilterer::targetDownsampleRate()
+{
+    return _targetDownsampleRate;
+}
+
+FilterBank TextureFilterer::_cochlearBank = generateCochlearBank();
+FilterBank TextureFilterer::_modulationBank = generateModulationBank();
+
+int TextureFilterer::_numCochlearEnvelopes      = 32;
+int TextureFilterer::_numModulationSignals      = 20;
+double TextureFilterer::_targetDownsampleRate   = 400;
+double TextureFilterer::_cochlearExponent       = -0.3;
+double TextureFilterer::_oneOverCochlearExponent = 1 / _cochlearExponent;

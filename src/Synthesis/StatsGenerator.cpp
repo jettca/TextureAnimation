@@ -10,8 +10,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 {
     // Cochlear statistics
 
-    int signalLength = cochlearEnvelopes.at(0)._signal.size();
-    double sampleRate = cochlearEnvelopes.at(0)._sampleRate;
+    int signalLength = cochlearEnvelopes.at(0).size();
+    double sampleRate = cochlearEnvelopes.at(0).sampleRate;
 
     int cochlearSize = cochlearEnvelopes.size();
 
@@ -173,15 +173,15 @@ double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
 std::complex<double> StatsGenerator::c2ModulationCorrelation(const Signal& signal1,
         const Signal& signal2, double variance1, double variance2)
 {
-    int size = std::min(signal1._signal.size(), signal2._signal.size());
+    int size = std::min(signal1.size(), signal2.size());
 
     std::complex<double> c = 0;
     for(int i = 0; i < size; i++)
     {
-        double denom = std::norm(signal1._signal[i]);
+        double denom = std::norm(signal1[i]);
         if(denom > 1e-100)
-            c += std::conj(std::pow(signal1._signal[i], 2) /
-                    denom) * signal2._signal[i];
+            c += std::conj(std::pow(signal1[i], 2) /
+                    denom) * signal2[i];
     }
     if(variance1 < 1e-10 || variance2 < 1e-10)
         return 0;
