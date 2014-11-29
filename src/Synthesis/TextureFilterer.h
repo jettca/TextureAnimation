@@ -36,6 +36,9 @@ namespace TextureSynthesis
         void modulationFilter(const std::vector<Signal>& cochlearEnvelopes,
                 std::vector<std::vector<Signal>>& modulationSignals) const;
 
+        static void modulationFilter(const Signal& cochlearEnvelope,
+                std::vector<Signal>& modulationSignals);
+
         // Various static getters
         static int numCochlearEnvelopes();
         static int numModulationSignals();

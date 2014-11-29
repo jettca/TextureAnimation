@@ -13,6 +13,11 @@ namespace TextureSynthesis
                 const std::vector<std::vector<Signal>>& modulationSignals,
                 std::vector<std::complex<double>>& statistics);
 
+        void computePartials(const std::vector<Signal>& cochlearEnvelopes,
+                const std::vector<std::vector<Signal>>& modulationSignals,
+                int curEnvelope, int curSample,
+                std::vector<std::complex<double>>& partials);
+
     private:
         double computeMean(const std::vector<double>& data);
 

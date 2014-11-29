@@ -95,6 +95,13 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
     }
 }
 
+void StatsGenerator::computePartials(const std::vector<Signal>& cochlearEnvelopes,
+        const std::vector<std::vector<Signal>>& modulationSignals,
+        int curEnvelope, int curSample,
+        std::vector<std::complex<double>>& partials)
+{
+}
+
 double StatsGenerator::computeMean(const std::vector<double>& data)
 {
     int size = data.size();

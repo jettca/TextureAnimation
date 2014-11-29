@@ -19,10 +19,13 @@ namespace TextureSynthesis
          */
         std::vector<Signal> cochlearEnvelopes;
         std::vector<std::vector<Signal>> modulationSignals;
+        std::vector<Signal> modSignalsForEnv;
 
         /* Statistics in current iteration
          */
         std::vector<std::complex<double>> currentStats;
+
+        std::vector<std::complex<double>> partialDerivatives;
 
         /* Target statistics
          */
@@ -65,5 +68,7 @@ namespace TextureSynthesis
         static double distanceFromTarget(OptimizationData *data);
         static void gradient(const gsl_vector *v, void *params, gsl_vector *df);
         static void gradAndDist(const gsl_vector *v, void *params, double *f, gsl_vector *df);
+        static double partialDerivative(OptimizationData *data, int curEnvelope,
+                int curSample);
     };
 }

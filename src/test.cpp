@@ -20,7 +20,8 @@ void donePlayingCallback()
 
 int main(int argc, char **argv)
 {
-    // TODO: fix bad sound ??
+    // TODO: optimize
+
     feenableexcept(FE_INVALID | FE_OVERFLOW);   // enable floating point exceptions
 
     // Handle input args
@@ -78,8 +79,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        AudioDevice audioDevice;
-        audioDevice.play(outSignal, donePlayingCallback);
+        AudioDevice audioDevice; audioDevice.play(outSignal, donePlayingCallback);
 
         while(stillPlaying)
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));

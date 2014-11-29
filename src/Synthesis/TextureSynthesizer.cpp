@@ -89,12 +89,6 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
     while (status == GSL_CONTINUE && iter < 5);
     std::cout << "End status: " << status << "\n";
 
-//    TODO: Fix recombining!!
-//    outSignal.set(_targetSignal);
-//    _curOptimizationData.textureFilterer.auditoryFilter(outSignal,
-//            _curOptimizationData.cochlearEnvelopes, _curOptimizationData.modulationSignals,
-//            true);
-
     // Convert results into output signal
     _curOptimizationData.textureFilterer.recombine(_curOptimizationData.cochlearEnvelopes,
             outSignal);
@@ -138,8 +132,26 @@ double TextureSynthesizer::distanceFromTarget(OptimizationData *data)
         distance += pow(std::real(difference), 2) + pow(std::imag(difference), 2);
     }
 
-    // Return result
     return distance;
+}
+
+double TextureSynthesizer::partialDerivative(OptimizationData *data, int curEnvelope,
+        int curSample)
+{
+    // TODO: Compute partial derivatives!
+    data->statsGenerator.computePartials(data->cochlearEnvelopes, data->modulationSignals,
+            curEnvelope, curSample, data->partialDerivatives);
+
+    int numPartials = data->partialDerivatives.size();
+    double grad = 0;
+    std::complex<double> term;
+    for(int i = 0; i < numPartials; i++)
+    {
+        term = data->currentStats[i] * data->partialDerivatives[i];
+        grad += 2 * (std::real(term) + std::imag(term));
+    }
+
+    return grad;
 }
 
 static int numGradients = 0;    // for output while debugging
@@ -159,29 +171,12 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
             (data->cochlearEnvelopes)[i][j] = gsl_vector_get(v, i * envelopeSize + j);
 
     // Calculate initial objective function value
-    double d1 = distanceFromTarget(data);
-    std::cout << "Starting distance is " << d1 << "\n";
+    double initialDistance = distanceFromTarget(data);
 
-    // Compute change in objective function value after changing every value in every envelope
-    double d2, delta;
+    // Compute partial derivates
     for(int i = 0; i < numEnvelopes; i++)
         for(int j = 0; j < envelopeSize; j++)
-        {
-            // Make slight change to argument
-            delta = std::real(data->cochlearEnvelopes[i][j]) * .05;
-            data->cochlearEnvelopes[i][j] += delta;
-
-            // Calculate objective function after change, store partial derivative
-            d2 = distanceFromTarget(data);
-            gsl_vector_set(df, i * envelopeSize + j, (d2 - d1) / delta);
-
-            // Undo change
-            data->cochlearEnvelopes[i][j] -= delta;
-
-            std::cout << numGradients << ": " << i << "." << j << " of "
-                << numEnvelopes << "." << envelopeSize << " is " << d2 << " with rate " << 
-                (d2 - d1) / delta << "\n";
-        }
+            gsl_vector_set(df, i * envelopeSize + j, partialDerivative(data, i, j));
 }
 
 void TextureSynthesizer::gradAndDist(const gsl_vector *v, void *params, double *f,
