@@ -139,16 +139,12 @@ double TextureSynthesizer::distanceFromTarget(OptimizationData *data, gsl_vector
         int envelopeSize = data->cochlearEnvelopes[0].size();
 
         double gradient;
-        std::complex<double> term;
         for(int env = 0; env < numEnvelopes; env++)
             for(int sample = 0; sample < envelopeSize; sample++)
             {
                 gradient = 0;
                 for(int stat = 0; stat < numStats; stat++)
-                {
-                    term = data->currentStats[stat] * data->jacobian[stat][env][sample];
-                    gradient += 2 * std::real(term) + std::imag(term);
-                }
+                    gradient += 2 * data->currentStats[stat] * data->jacobian[stat][env][sample];
                 gsl_vector_set(df, env * envelopeSize + sample, gradient);
             }
     }

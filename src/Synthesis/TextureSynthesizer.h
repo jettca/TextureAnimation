@@ -28,11 +28,11 @@ namespace TextureSynthesis
         /* Index by statistic, then envelope, then time
          * I'm so sorry
          */
-        std::vector<std::vector<std::vector<std::complex<double>>>> jacobian;
+        std::vector<std::vector<std::vector<double>>> jacobian;
 
         /* Target statistics
          */
-        std::vector<int> targetStats;
+        std::vector<double> targetStats;
 
         /* Objects for computing statistics
          */

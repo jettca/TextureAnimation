@@ -6,23 +6,23 @@ using namespace TextureSynthesis;
 
 void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
-        std::vector<std::complex<double>>& statistics)
+        std::vector<double>& statistics)
 {
     computeStatistics(cochlearEnvelopes, modulationSignals, statistics, nullptr);
 }
 
 void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
-        std::vector<std::pair<double, int>>& statistics,
-        std::vector<std::vector<std::complex<double>>> jacobian)
+        std::vector<double>& statistics,
+        std::vector<std::vector<std::vector<double>>> jacobian)
 {
     computeStatistics(cochlearEnvelopes, modulationSignals, statistics, &jacobian);
 }
 
 void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
-        std::vector<std::pair<double, int>>& statistics,
-        std::vector<std::vector<std::complex<double>>>* jacobian)
+        std::vector<double>& statistics,
+        std::vector<std::vector<std::vector<double>>>* jacobian)
 {
     // Cochlear statistics
 
@@ -36,7 +36,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
     std::vector<double> cochlearMeans(numEnvelopes);
     std::vector<double> cochlearVariances(numEnvelopes);
     statistics.clear();
-    if(jacobian) jacobian.clear();
+    if(jacobian) jacobian->clear();
 
     std::vector<double> zeros;
     for(int i = 0; i < cochlearEnvelopes[0].size(); i++)
@@ -53,15 +53,15 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         statistics.push_back(mean);
         if(jacobian)
         {
-            std::vector<std::vector<double>> 1stMomentGrads;
+            std::vector<std::vector<double>> firstMomentGrads;
             for(int env = 0; env < numEnvelopes; env++)
             {
                 if(i == env)
-                    1stMomentGrads.push_back(computeMeanGrads(realPart));
+                    firstMomentGrads.push_back(computeMeanGrads(realPart));
                 else
-                    1stMomentGrads.push_back(zeros);
+                    firstMomentGrads.push_back(zeros);
             }
-            jacobian.push_back(1stMomentGrads);
+            jacobian->push_back(firstMomentGrads);
         }
 
         variance = computeVariance(realPart, mean);
@@ -71,27 +71,27 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         statistics.push_back(nthMoment(realPart, 4, mean, variance));
         if(jacobian)
         {
-            std::vector<std::vector<double>> 2ndMomentGrads;
-            std::vector<std::vector<double>> 3rdMomentGrads;
-            std::vector<std::vector<double>> 4thMomentGrads;
+            std::vector<std::vector<double>> secondMomentGrads;
+            std::vector<std::vector<double>> thirdMomentGrads;
+            std::vector<std::vector<double>> fourthMomentGrads;
             for(int env = 0; env < numEnvelopes; env++)
             {
                 if(i == env)
                 {
-                    2ndMomentGrads.push_back(nthMomentGrads(realPart, 2, mean, variance));
-                    3rdMomentGrads.push_back(nthMomentGrads(realPart, 3, mean, variance));
-                    4thMomentGrads.push_back(nthMomentGrads(realPart, 4, mean, variance));
+                    secondMomentGrads.push_back(nthMomentGrads(realPart, 2, mean, variance));
+                    thirdMomentGrads.push_back(nthMomentGrads(realPart, 3, mean, variance));
+                    fourthMomentGrads.push_back(nthMomentGrads(realPart, 4, mean, variance));
                 }
                 else
                 {
-                    2ndMomentGrads.push_back(zeros);
-                    3rdMomentGrads.push_back(zeros);
-                    4thMomentGrads.push_back(zeros);
+                    secondMomentGrads.push_back(zeros);
+                    thirdMomentGrads.push_back(zeros);
+                    fourthMomentGrads.push_back(zeros);
                 }
             }
-            jacobian.push_back(2ndMomentGrads);
-            jacobian.push_back(3rdMomentGrads);
-            jacobian.push_back(4thMomentGrads);
+            jacobian->push_back(secondMomentGrads);
+            jacobian->push_back(thirdMomentGrads);
+            jacobian->push_back(fourthMomentGrads);
         }
 
         for(int j : correlationDifs)
@@ -108,11 +108,11 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                         if(env == i || env == i - j)
                             ijCorrelationGrads.push_back(crossCorrelationGrads(realPart,
                                     cochlearEnvelopes[i - j].realPart(), mean, cochlearMeans[i - j],
-                                    variance, cochlearVariances[i - j]), env == i - j);
+                                    variance, cochlearVariances[i - j], env == i));
                         else
                             ijCorrelationGrads.push_back(zeros);
                     }
-                    jacobian.push_back(ijCorrelationGrads);
+                    jacobian->push_back(ijCorrelationGrads);
                 }
             }
     }
@@ -137,7 +137,18 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
             modulationVariances[i][j] = variance;
 
             statistics.push_back(computePower(realPart, variance));
-            if(jacobian) jacobian.push_back(computePowerGrads(realPart, variance));
+            if(jacobian)
+            {
+                std::vector<std::vector<double>> powerGrads;
+                for(int env = 0; env < numEnvelopes; env++)
+                {
+                    if(env == i)
+                        powerGrads.push_back(computePowerGrads(realPart, variance));
+                    else
+                        powerGrads.push_back(zeros);
+                }
+                jacobian->push_back(powerGrads);
+            }
         }
     }
 
@@ -150,10 +161,22 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                             modulationSignals[i][n].realPart(),
                             modulationSignals[j][n].realPart(),
                             modulationVariances[i][n], modulationVariances[j][n]));
-                if(jacobian) jacobian.push_back(c1ModulationCorrelationGrads(
-                            modulationSignals[i][n].realPart(),
-                            modulationSignals[j][n].realPart(),
-                            modulationVariances[i][n], modulationVariances[j][n]));
+                if(jacobian)
+                {
+                    std::vector<std::vector<double>> ijnC1CorrelationGrads;
+                    for(int env = 0; env < numEnvelopes; env++)
+                    {
+                        if(env == i || env == j)
+                            ijnC1CorrelationGrads.push_back(c1ModulationCorrelationGrads(
+                                    modulationSignals[i][n].realPart(),
+                                    modulationSignals[j][n].realPart(),
+                                    modulationVariances[i][n], modulationVariances[j][n],
+                                    env == i));
+                        else
+                            ijnC1CorrelationGrads.push_back(zeros);
+                    }
+                    jacobian->push_back(ijnC1CorrelationGrads);
+                }
             }
 
     int numC2s = 6;
@@ -161,6 +184,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
     for(int n = 0; n <= numC2s; n++)
         analyticModSignals.push_back(Signal(signalLength, sampleRate));
 
+    std::complex<double> c2Corr;
+    std::vector<std::complex<double>> c2CorrGrads;
     for(int i = 0; i < numEnvelopes; i++)
     {
         for(int n = 0; n <= numC2s; n++)
@@ -170,12 +195,37 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         }
         for(int n = 0; n < numC2s; n++)
         {
-            statistics.push_back(c2ModulationCorrelation(analyticModSignals[n],
+            c2Corr = c2ModulationCorrelation(analyticModSignals[n],
                     analyticModSignals[n + 1], modulationVariances[i][n],
-                    modulationVariances[i][n + 1]));
-            if(jacobian) jacobian.push_back(c2ModulationCorrelationGrads(analyticModSignals[n],
-                    analyticModSignals[n + 1], modulationVariances[i][n],
-                    modulationVariances[i][n + 1]));
+                    modulationVariances[i][n + 1]);
+            statistics.push_back(std::real(c2Corr));
+            statistics.push_back(std::imag(c2Corr));
+            if(jacobian)
+            {
+                std::vector<std::vector<double>> inC2CorrelationRealGrads(numEnvelopes);
+                std::vector<std::vector<double>> inC2CorrelationImagGrads(numEnvelopes);
+                for(int env = 0; env < numEnvelopes; env++)
+                {
+                    if(env == n || env == n + 1)
+                    {
+                        c2CorrGrads = c2ModulationCorrelationGrads(analyticModSignals[n],
+                            analyticModSignals[n + 1], modulationVariances[i][n],
+                            modulationVariances[i][n + 1], env == n);
+                        for(std::complex<double> c2Val : c2CorrGrads)
+                        {
+                            inC2CorrelationRealGrads[env].push_back(std::real(c2Val));
+                            inC2CorrelationImagGrads[env].push_back(std::imag(c2Val));
+                        }
+                    }
+                    else
+                    {
+                        inC2CorrelationRealGrads[env] = zeros;
+                        inC2CorrelationImagGrads[env] = zeros;
+                    }
+                }
+                jacobian->push_back(inC2CorrelationRealGrads);
+                jacobian->push_back(inC2CorrelationImagGrads);
+            }
         }
     }
 }
@@ -189,7 +239,7 @@ double StatsGenerator::computeMean(const std::vector<double>& data)
     return m / size;
 }
 
-std::vector<double> computeMeanGrads(const std::vector<double>& data)
+std::vector<double> StatsGenerator::computeMeanGrads(const std::vector<double>& data)
 {
     int size = data.size();
     double dm = 1.0 / size;
@@ -206,6 +256,12 @@ double StatsGenerator::computeVariance(const std::vector<double>& data, double m
     for(int i = 0; i < size; i++)
         v += (data[i] - mean) * (data[i] - mean);
     return v / size;
+}
+
+std::vector<double> StatsGenerator::computeVarianceGrads(const std::vector<double>& data, double mean)
+{
+    std::vector<double> grads(data.size());
+    return grads;
 }
 
 double StatsGenerator::nthMoment(const std::vector<double>& data,
@@ -235,6 +291,13 @@ double StatsGenerator::nthMoment(const std::vector<double>& data,
     }
 }
 
+std::vector<double> StatsGenerator::nthMomentGrads(const std::vector<double>& data,
+        int n, double mean, double variance)
+{
+    std::vector<double> grads(data.size());
+    return grads;
+}
+
 double StatsGenerator::crossCorrelation(const std::vector<double>& data1,
         const std::vector<double>& data2, double mean1, double mean2,
         double variance1, double variance2)
@@ -251,6 +314,14 @@ double StatsGenerator::crossCorrelation(const std::vector<double>& data1,
         return c / (size * variance1 * variance2);
 }
 
+std::vector<double> StatsGenerator::crossCorrelationGrads(const std::vector<double>& data1,
+        const std::vector<double>& data2, double mean1, double mean2,
+        double variance1, double variance2, bool varyingData1)
+{
+    std::vector<double> grads(data1.size());
+    return grads;
+}
+
 double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
         const std::vector<double>& data2, double variance1, double variance2)
 {
@@ -263,6 +334,14 @@ double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
         return 0;
     else
         return c / (size * variance1 * variance2);
+}
+
+std::vector<double> StatsGenerator::c1ModulationCorrelationGrads(
+        const std::vector<double>& data1, const std::vector<double>& data2,
+        double variance1, double variance2, bool varyingData1)
+{
+    std::vector<double> grads(data1.size());
+    return grads;
 }
 
 std::complex<double> StatsGenerator::c2ModulationCorrelation(const Signal& signal1,
@@ -284,6 +363,13 @@ std::complex<double> StatsGenerator::c2ModulationCorrelation(const Signal& signa
         return c / (size * variance1 * variance2);
 }
 
+std::vector<std::complex<double>> StatsGenerator::c2ModulationCorrelationGrads(const Signal& signal1,
+        const Signal& signal2, double variance1, double variance2, bool varyingData1)
+{
+    std::vector<std::complex<double>> grads(signal1.size());
+    return grads;
+}
+
 double StatsGenerator::computePower(const std::vector<double>& data, double variance)
 {
     int size = data.size();
@@ -298,3 +384,8 @@ double StatsGenerator::computePower(const std::vector<double>& data, double vari
         return p;
 }
 
+std::vector<double> StatsGenerator::computePowerGrads(const std::vector<double>& data, double variance)
+{
+    std::vector<double> grads(data.size());
+    return grads;
+}

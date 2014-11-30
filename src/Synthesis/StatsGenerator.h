@@ -16,7 +16,12 @@ namespace TextureSynthesis
         void computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
                 const std::vector<std::vector<Signal>>& modulationSignals,
                 std::vector<double>& statistics,
-                std::vector<std::vector<std::vector<std::complex<double>>>> jacobian);
+                std::vector<std::vector<std::vector<double>>> jacobian);
+
+        void computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
+                const std::vector<std::vector<Signal>>& modulationSignals,
+                std::vector<double>& statistics,
+                std::vector<std::vector<std::vector<double>>>* jacobian);
 
     private:
 
@@ -41,17 +46,18 @@ namespace TextureSynthesis
                 double variance1, double variance2);
         std::vector<double> crossCorrelationGrads(const std::vector<double>& data1,
                 const std::vector<double>& data2, double mean1, double mean2,
-                double variance1, double variance2);
+                double variance1, double variance2, bool varyingData1);
 
         double c1ModulationCorrelation(const std::vector<double>& data1,
                 const std::vector<double>& data2, double variance1, double variance2);
         std::vector<double> c1ModulationCorrelationGrads(const std::vector<double>& data1,
-                const std::vector<double>& data2, double variance1, double variance2);
+                const std::vector<double>& data2, double variance1, double variance2,
+                bool varyingData1);
 
         std::complex<double> c2ModulationCorrelation(const Signal& signal1,
                 const Signal& signal2, double variance1, double variance2);
         std::vector<std::complex<double>> c2ModulationCorrelationGrads(const Signal& signal1,
-                const Signal& signal2, double variance1, double variance2);
+                const Signal& signal2, double variance1, double variance2, bool varyingData1);
 
         double computePower(const std::vector<double>& data, double variance);
         std::vector<double> computePowerGrads(const std::vector<double>& data, double variance);
