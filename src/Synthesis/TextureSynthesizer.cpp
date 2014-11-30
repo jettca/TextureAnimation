@@ -117,41 +117,48 @@ double TextureSynthesizer::distanceFromTarget(const gsl_vector *v, void *params)
 
 double TextureSynthesizer::distanceFromTarget(OptimizationData *data)
 {
+    return distanceFromTarget(data, nullptr);
+}
+
+double TextureSynthesizer::distanceFromTarget(OptimizationData *data, gsl_vector *df)
+{
     // Compute new modulation signals and statistics from updated envelopes
     data->textureFilterer.modulationFilter(data->cochlearEnvelopes, data->modulationSignals);
-    data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
-            data->currentStats);
+    if(df)
+        data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
+                data->currentStats, data->jacobian);
+    else
+        data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
+                data->currentStats);
+
+    // Compute distance gradient from jacobian of statistics function
+    int numStats = data->targetStats.size();
+    if(df)
+    {
+        int numEnvelopes = data->cochlearEnvelopes.size();
+        int envelopeSize = data->cochlearEnvelopes[0].size();
+
+        double gradient;
+        std::complex<double> term;
+        for(int env = 0; env < numEnvelopes; env++)
+            for(int sample = 0; sample < envelopeSize; sample++)
+            {
+                gradient = 0;
+                for(int stat = 0; stat < numStats; stat++)
+                {
+                    term = data->currentStats[stat] * data->jacobian[stat][env][sample];
+                    gradient += 2 * std::real(term) + std::imag(term);
+                }
+                gsl_vector_set(df, env * envelopeSize + sample, gradient);
+            }
+    }
 
     // Sum up L2 distance between current stats and target stats
     double distance = 0;
-    std::complex<double> difference;
-    int numStats = data->targetStats.size();
     for(int i = 0; i < numStats; i++)
-    {
-        difference = data->currentStats.at(i) - data->targetStats.at(i);
-        distance += pow(std::real(difference), 2) + pow(std::imag(difference), 2);
-    }
+        distance += pow(data->currentStats[i] - data->targetStats[i], 2);
 
     return distance;
-}
-
-double TextureSynthesizer::partialDerivative(OptimizationData *data, int curEnvelope,
-        int curSample)
-{
-    // TODO: Compute partial derivatives!
-    data->statsGenerator.computePartials(data->cochlearEnvelopes, data->modulationSignals,
-            curEnvelope, curSample, data->partialDerivatives);
-
-    int numPartials = data->partialDerivatives.size();
-    double grad = 0;
-    std::complex<double> term;
-    for(int i = 0; i < numPartials; i++)
-    {
-        term = data->currentStats[i] * data->partialDerivatives[i];
-        grad += 2 * (std::real(term) + std::imag(term));
-    }
-
-    return grad;
 }
 
 static int numGradients = 0;    // for output while debugging
@@ -171,12 +178,7 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
             (data->cochlearEnvelopes)[i][j] = gsl_vector_get(v, i * envelopeSize + j);
 
     // Calculate initial objective function value
-    double initialDistance = distanceFromTarget(data);
-
-    // Compute partial derivates
-    for(int i = 0; i < numEnvelopes; i++)
-        for(int j = 0; j < envelopeSize; j++)
-            gsl_vector_set(df, i * envelopeSize + j, partialDerivative(data, i, j));
+    double initialDistance = distanceFromTarget(data, df);
 }
 
 void TextureSynthesizer::gradAndDist(const gsl_vector *v, void *params, double *f,

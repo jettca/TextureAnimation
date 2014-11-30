@@ -23,13 +23,16 @@ namespace TextureSynthesis
 
         /* Statistics in current iteration
          */
-        std::vector<std::complex<double>> currentStats;
+        std::vector<double> currentStats;
 
-        std::vector<std::complex<double>> partialDerivatives;
+        /* Index by statistic, then envelope, then time
+         * I'm so sorry
+         */
+        std::vector<std::vector<std::vector<std::complex<double>>>> jacobian;
 
         /* Target statistics
          */
-        std::vector<std::complex<double>> targetStats;
+        std::vector<int> targetStats;
 
         /* Objects for computing statistics
          */
@@ -66,6 +69,7 @@ namespace TextureSynthesis
          */
         static double distanceFromTarget(const gsl_vector *v, void *params);
         static double distanceFromTarget(OptimizationData *data);
+        static double distanceFromTarget(OptimizationData *data, gsl_vector *df);
         static void gradient(const gsl_vector *v, void *params, gsl_vector *df);
         static void gradAndDist(const gsl_vector *v, void *params, double *f, gsl_vector *df);
         static double partialDerivative(OptimizationData *data, int curEnvelope,
