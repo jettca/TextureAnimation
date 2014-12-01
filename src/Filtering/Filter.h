@@ -11,10 +11,7 @@ namespace TextureSynthesis
         virtual void filter(Aquila::SpectrumType& spectrum,
                 double sampleRate) = 0;
         
-        void filter(const Signal& signal, Aquila::SpectrumType& spectrum);
-        void filter(Signal& signal);
-
-        virtual ~Filter() { }
-        static int numApplications;
+        void filter(const Signal& signal, Aquila::SpectrumType& spectrum) const;
+        void filter(Signal& signal) const;
     };
 }

@@ -25,6 +25,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         std::vector<std::vector<std::vector<double>>>* jacobian)
 {
     // TODO: optimize vector handling
+    // TODO: finish implementing gradient functions
 
     // Cochlear statistics
 
@@ -136,7 +137,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         for(int j = 0; j < modulationSize; j++)
         {
             realPart = modulationSignals[i][j].realPart();
-            variance = computeVariance(realPart, computeMean(realPart));
+            mean = computeMean(realPart);
+            variance = computeVariance(realPart, mean);
             modulationVariances[i][j] = variance;
 
             statistics.push_back(computePower(realPart, variance));
@@ -146,7 +148,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                 for(int env = 0; env < numEnvelopes; env++)
                 {
                     if(env == i)
-                        powerGrad.push_back(computePowerGrad(realPart, variance));
+                        // TODO: pass appropriate filter to computePowerGrad
+                        powerGrad.push_back(computePowerGrad(modulationSignals[i][j], mean, variance));
                     else
                         powerGrad.push_back(zeros);
                 }
@@ -384,6 +387,49 @@ std::vector<double> StatsGenerator::crossCorrelationGrad(const std::vector<doubl
     return grad;
 }
 
+double StatsGenerator::computePower(const std::vector<double>& data, double variance)
+{
+    int size = data.size();
+
+    double p = 0;
+    for(int i = 0; i < size; i++)
+        p += data[i] * data[i];
+
+    if(variance < 1e-100)
+        return 0;
+    else
+        return p;
+}
+
+std::vector<double> StatsGenerator::computePowerGrad(const Signal& data, const Filter& filter,
+        double mean, double variance)
+{
+    int size = data.size();
+    std::vector<double> grad;
+    double sizeInv = 1.0 / size;
+
+    Signal fData(data);
+    filter.filter(fData);
+    double sqFilteredMean = 0;
+    for(int i = 0; i < size; i++)
+    {
+        sqFilteredMean += pow(std::real(fData[i]), 2);
+        fData[i] *= sizeInv;
+    }
+    sqFilteredMean *= sizeInv;
+    
+    Signal ffData(fdata);
+    filter.filter(ffdata);
+
+    for(int i = 0; i < size; i++)
+    {
+        grad[i] = (2 * variance * ffData - 2 * sqFilteredMean
+            * (std::real(data[i]) - mean) * sizeInv) / pow(variance, 2);
+    }
+
+    return grad;
+}
+
 double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
         const std::vector<double>& data2, double variance1, double variance2)
 {
@@ -429,25 +475,5 @@ std::vector<std::complex<double>> StatsGenerator::c2ModulationCorrelationGrad(co
         const Signal& signal2, double variance1, double variance2, bool varyingData1)
 {
     std::vector<std::complex<double>> grad(signal1.size());
-    return grad;
-}
-
-double StatsGenerator::computePower(const std::vector<double>& data, double variance)
-{
-    int size = data.size();
-
-    double p = 0;
-    for(int i = 0; i < size; i++)
-        p += data[i] * data[i];
-
-    if(variance < 1e-100)
-        return 0;
-    else
-        return p;
-}
-
-std::vector<double> StatsGenerator::computePowerGrad(const std::vector<double>& data, double variance)
-{
-    std::vector<double> grad(data.size());
     return grad;
 }

@@ -20,8 +20,6 @@ void donePlayingCallback()
 
 int main(int argc, char **argv)
 {
-    // TODO: optimize
-
     feenableexcept(FE_INVALID | FE_OVERFLOW);   // enable floating point exceptions
 
     // Handle input args

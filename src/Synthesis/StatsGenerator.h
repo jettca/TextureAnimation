@@ -47,6 +47,10 @@ namespace TextureSynthesis
                 const std::vector<double>& data2, double mean1, double mean2,
                 double variance1, double variance2, bool varyingData1);
 
+        double computePower(const std::vector<double>& data, double variance);
+        std::vector<double> computePowerGrad(const Signal& data, const Filter& filter,
+                double mean, double variance);
+
         double c1ModulationCorrelation(const std::vector<double>& data1,
                 const std::vector<double>& data2, double variance1, double variance2);
         std::vector<double> c1ModulationCorrelationGrad(const std::vector<double>& data1,
@@ -57,8 +61,5 @@ namespace TextureSynthesis
                 const Signal& signal2, double variance1, double variance2);
         std::vector<std::complex<double>> c2ModulationCorrelationGrad(const Signal& signal1,
                 const Signal& signal2, double variance1, double variance2, bool varyingData1);
-
-        double computePower(const std::vector<double>& data, double variance);
-        std::vector<double> computePowerGrad(const std::vector<double>& data, double variance);
     };
 }
