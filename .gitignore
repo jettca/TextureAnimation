@@ -1,6 +1,7 @@
 aquila/*
 bin/*
 *.swp
+*.swo
 log*
 
 CMakeCache.txt

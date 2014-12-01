@@ -25,7 +25,7 @@ namespace TextureSynthesis
          */
         std::vector<double> currentStats;
 
-        /* Index by statistic, then envelope, then time
+        /* Indexed by statistic, then envelope, then time
          * I'm so sorry
          */
         std::vector<std::vector<std::vector<double>>> jacobian;
