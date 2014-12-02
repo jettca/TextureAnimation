@@ -60,6 +60,10 @@ namespace TextureSynthesis
         std::complex<double> c2ModulationCorrelation(const Signal& signal1,
                 const Signal& signal2, double variance1, double variance2);
         std::vector<std::complex<double>> c2ModulationCorrelationGrad(const Signal& signal1,
-                const Signal& signal2, double variance1, double variance2, bool varyingData1);
+                const Signal& signal2, double variance1, double variance2, const Filter& filter1,
+                const Filter& filter2, bool varyingData1);
+
+        std::vector<double> computeShit(const Signal& varyingAnalytic,
+                const std::vector<double>& fa, const Filter& varyingFilter);
     };
 }

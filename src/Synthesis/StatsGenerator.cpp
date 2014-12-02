@@ -218,7 +218,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                     {
                         c2CorrGrad = c2ModulationCorrelationGrad(analyticModSignals[n],
                             analyticModSignals[n + 1], modulationVariances[i][n],
-                            modulationVariances[i][n + 1], env == n);
+                            modulationVariances[i][n + 1], *(modBank->getFilter(n)),
+                            *(modBank->getFilter(n + 1)), env == n);
                         for(std::complex<double> c2Val : c2CorrGrad)
                         {
                             inC2CorrelationRealGrad[env].push_back(std::real(c2Val));
@@ -508,8 +509,132 @@ std::complex<double> StatsGenerator::c2ModulationCorrelation(const Signal& signa
 }
 
 std::vector<std::complex<double>> StatsGenerator::c2ModulationCorrelationGrad(const Signal& signal1,
-        const Signal& signal2, double variance1, double variance2, bool varyingData1)
+        const Signal& signal2, double variance1, double variance2, const Filter& filter1,
+        const Filter& filter2, bool varyingData1)
 {
-    std::vector<std::complex<double>> grad(signal1.size());
+    int size = std::min(signal1.size(), signal2.size());
+    double sizeInv = 1.0 / size;
+    std::vector<std::complex<double>> grad(size);
+
+    const Signal *varying, *fixed;
+    double varyingVar, fixedVar;
+    const Filter *varyingFilter, *fixedFilter;
+    if(varyingData1)
+    {
+        varying = &signal1; fixed = &signal2;
+        varyingVar = variance1; fixedVar = variance2;
+        varyingFilter = &filter1; fixedFilter = &filter2;
+    }
+    else
+    {
+        varying = &signal2; fixed = &signal1;
+        varyingVar = variance2; fixedVar = variance1;
+        varyingFilter = &filter2; fixedFilter = &filter1;
+    }
+
+    Signal varyingAnalytic(*varying);
+    Signal fixedAnalytic(*fixed);
+    varyingAnalytic.makeAnalytic();
+    fixedAnalytic.makeAnalytic();
+
+    Signal u(size, varyingAnalytic.sampleRate);
+    for(int i = 0; i < size; i++)
+    {
+        double norm = std::norm(varyingAnalytic[i]);
+        u[i] = 2 * pow(std::real(varyingAnalytic[i]), 2) / norm - norm;
+    }
+
+    std::vector<double> fa_real = fixedAnalytic.realPart();
+    std::vector<double> fa_imag = fixedAnalytic.imaginaryPart();
+
+    double va_magnitude = 0;
+    double fa_magnitude = 0;
+    for(int i = 0; i < size; i++)
+    {
+        va_magnitude += pow(sizeInv * std::real(varyingAnalytic[i]), 2);
+        fa_magnitude += pow(sizeInv * fa_real[i], 2);
+    }
+    va_magnitude = sqrt(va_magnitude);
+    fa_magnitude = sqrt(fa_magnitude);
+
+    std::vector<double> stuff_real = computeShit(varyingAnalytic, fa_real, *varyingFilter);
+    std::vector<double> stuff_imag = computeShit(varyingAnalytic, fa_imag, *varyingFilter);
+
+    Signal stuff2(u);
+    stuff2.scale(sizeInv);
+    fixedFilter->filter(stuff2);
+    Signal stuff2_imag(stuff2);
+    stuff2_imag.makeAnalytic();
+    stuff2_imag.scale(-1);
+
+    double uReal = 0;
+    double uImag = 0;
+    for(int i = 0; i < size; i++)
+    {
+        uReal += std::real(u[i]) * std::real(fixedAnalytic[i]) * sizeInv;
+        uImag += std::real(u[i]) * std::imag(fixedAnalytic[i]) * sizeInv;
+    }
+
+    varyingAnalytic.scale(sizeInv);
+    fixedAnalytic.scale(sizeInv);
+    varyingAnalytic.makeReal();
+    fixedAnalytic.makeReal();
+    varyingFilter->filter(varyingAnalytic);
+    fixedFilter->filter(fixedAnalytic);
+
+    std::complex<double> stuff3;
+    for(int i = 0; i < size; i++)
+    {
+        grad[i] = std::complex<double>(stuff_real[i] + std::real(stuff2[i]),
+                stuff_imag[i] + std::imag(stuff2_imag[i]));
+        grad[i] *= va_magnitude * fa_magnitude;
+        grad[i] -= std::complex<double>(uReal * fa_magnitude / va_magnitude,
+                uImag * va_magnitude / fa_magnitude) * varyingAnalytic[i] * fixedAnalytic[i];
+        grad[i] /= pow(va_magnitude, 2) + pow(fa_magnitude, 2);
+    }
+
     return grad;
+}
+
+
+std::vector<double> StatsGenerator::computeShit(const Signal& varyingAnalytic,
+        const std::vector<double>& fa, const Filter& varyingFilter)
+{
+    int size = varyingAnalytic.size();
+    double sizeInv = 1.0 / size;
+    std::vector<double> stuff(size);
+
+    Signal toFilter1(size, varyingAnalytic.sampleRate);
+    Signal toFilter2(size, varyingAnalytic.sampleRate);
+    Signal toFilter3(size, varyingAnalytic.sampleRate);
+    Signal toFilter4(size, varyingAnalytic.sampleRate);
+    Signal toFilter5(size, varyingAnalytic.sampleRate);
+
+    double va_real, va_imag, va_norm;
+    for(int i = 0; i < size; i++)
+    {
+        va_real = std::real(varyingAnalytic[i]);
+        va_imag = std::imag(varyingAnalytic[i]);
+        va_norm = std::norm(varyingAnalytic[i]);
+
+        toFilter1[i] = 4 * va_real / va_norm * sizeInv * fa[i];
+        toFilter2[i] = 2 * pow(va_real, 2) / pow(va_norm, 3) * va_real * sizeInv * fa[i];
+        toFilter3[i] = toFilter2[i] / va_real * va_imag;
+        toFilter4[i] = toFilter1[i] * 0.25;
+        toFilter5[i] = va_imag / va_norm * sizeInv * fa[i];
+    }
+
+    varyingFilter.filter(toFilter1);
+    varyingFilter.filter(toFilter2);
+    varyingFilter.filter(toFilter3);
+    toFilter3.makeAnalytic();
+    varyingFilter.filter(toFilter4);
+    varyingFilter.filter(toFilter5);
+    toFilter5.makeAnalytic();
+
+    for(int i = 0; i < size; i++)
+        stuff[i] = std::real(toFilter1[i]) - std::real(toFilter2[i]) + std::imag(toFilter3[i])
+            - std::real(toFilter4[i]) + std::imag(toFilter5[i]);
+
+    return stuff;
 }

@@ -27,6 +27,8 @@ namespace TextureSynthesis
 
         void pow(double a);
         void scale(double s);
+        void makeReal();
+        void makeImag();
 
         std::vector<double> realPart() const;
         std::vector<double> imaginaryPart() const;

@@ -75,6 +75,19 @@ void Signal::scale(double s)
         _signal[i] *= s;
 }
 
+void Signal::makeReal()
+{
+    int signalSize = _signal.size();
+    for(int i = 0; i < signalSize; i++)
+        _signal[i] = std::real(_signal[i]);
+}
+void Signal::makeImag()
+{
+    int signalSize = _signal.size();
+    for(int i = 0; i < signalSize; i++)
+        _signal[i] = std::imag(_signal[i]);
+}
+
 std::vector<double> Signal::realPart() const
 {
     int signalSize = _signal.size();
