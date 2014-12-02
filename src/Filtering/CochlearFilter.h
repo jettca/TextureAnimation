@@ -9,7 +9,7 @@ namespace TextureSynthesis
     public:
         CochlearFilter(double centerFrequency);
         using Filter::filter;
-        void filter(Aquila::SpectrumType& spectrum, double sampleRate);
+        void filter(Aquila::SpectrumType& spectrum, double sampleRate) const;
 
     private:
         double _centerFrequency;

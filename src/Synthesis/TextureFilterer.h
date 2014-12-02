@@ -43,6 +43,7 @@ namespace TextureSynthesis
         static int numCochlearEnvelopes();
         static int numModulationSignals();
         static double targetDownsampleRate();
+        static const FilterBank& modulationBank();
 
     private:
 

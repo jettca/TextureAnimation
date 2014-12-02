@@ -7,7 +7,7 @@ LowpassFilter::LowpassFilter(double lowpassFrequency)
     : _lowpassFrequency(lowpassFrequency)
 { }
 
-void LowpassFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate)
+void LowpassFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate) const
 {
     int size = spectrum.size();
     Aquila::SpectrumType filterSpectrum(size);

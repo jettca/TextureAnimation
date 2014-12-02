@@ -9,7 +9,7 @@ namespace TextureSynthesis
     public:
         LowpassFilter(double lowpassFrequency);
         using Filter::filter;
-        void filter(Aquila::SpectrumType& spectrum, double sampleRate);
+        void filter(Aquila::SpectrumType& spectrum, double sampleRate) const;
 
     private:
         double _lowpassFrequency;

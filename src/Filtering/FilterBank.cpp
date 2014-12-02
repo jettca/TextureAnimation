@@ -51,3 +51,8 @@ void FilterBank::apply(Signal& signal, int index)
     _filters.at(index)->filter(spectrum, signal.sampleRate);
     fft->ifft(spectrum, signal.samples());
 }
+
+const std::shared_ptr<Filter> FilterBank::getFilter(int index) const
+{
+    return _filters.at(index);
+}

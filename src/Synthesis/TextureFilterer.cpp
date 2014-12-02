@@ -135,6 +135,11 @@ double TextureFilterer::targetDownsampleRate()
     return _targetDownsampleRate;
 }
 
+const FilterBank& TextureFilterer::modulationBank()
+{
+    return _modulationBank;
+}
+
 FilterBank TextureFilterer::_cochlearBank = generateCochlearBank();
 FilterBank TextureFilterer::_modulationBank = generateModulationBank();
 

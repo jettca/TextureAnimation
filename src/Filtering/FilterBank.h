@@ -19,6 +19,8 @@ namespace TextureSynthesis
                 std::vector<Signal>& outSignals);
         void apply(Signal& signal, int index);
 
+        const std::shared_ptr<Filter> getFilter(int index) const;
+
     private:
         std::vector<std::shared_ptr<Filter>> _filters;
     };

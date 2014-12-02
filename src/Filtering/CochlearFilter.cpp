@@ -8,7 +8,7 @@ CochlearFilter::CochlearFilter(double centerFrequency)
     : _centerFrequency(centerFrequency)
 { }
 
-void CochlearFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate)
+void CochlearFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate) const
 {
     int size = spectrum.size();
     Aquila::SpectrumType filterSpectrum(size);

@@ -15,12 +15,12 @@ namespace TextureSynthesis
 
         void computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
                 const std::vector<std::vector<Signal>>& modulationSignals,
-                std::vector<double>& statistics,
+                std::vector<double>& statistics, const FilterBank& modBank,
                 std::vector<std::vector<std::vector<double>>> jacobian);
 
         void computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
                 const std::vector<std::vector<Signal>>& modulationSignals,
-                std::vector<double>& statistics,
+                std::vector<double>& statistics, const FilterBank* modBank,
                 std::vector<std::vector<std::vector<double>>>* jacobian);
 
     private:
@@ -48,8 +48,8 @@ namespace TextureSynthesis
                 double variance1, double variance2, bool varyingData1);
 
         double computePower(const std::vector<double>& data, double variance);
-        std::vector<double> computePowerGrad(const Signal& data, const Filter& filter,
-                double mean, double variance);
+        std::vector<double> computePowerGrad(const std::vector<double>& data,
+                const Signal& modSignal, const Filter& filter, double mean, double variance);
 
         double c1ModulationCorrelation(const std::vector<double>& data1,
                 const std::vector<double>& data2, double variance1, double variance2);

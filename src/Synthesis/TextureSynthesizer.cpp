@@ -126,7 +126,7 @@ double TextureSynthesizer::distanceFromTarget(OptimizationData *data, gsl_vector
     data->textureFilterer.modulationFilter(data->cochlearEnvelopes, data->modulationSignals);
     if(df)
         data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
-                data->currentStats, data->jacobian);
+                data->currentStats, data->textureFilterer.modulationBank(), data->jacobian);
     else
         data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
                 data->currentStats);

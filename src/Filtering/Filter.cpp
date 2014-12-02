@@ -2,7 +2,7 @@
 
 using namespace TextureSynthesis;
 
-void Filter::filter(const Signal& signal, Aquila::SpectrumType& spectrum)
+void Filter::filter(const Signal& signal, Aquila::SpectrumType& spectrum) const
 {
     std::shared_ptr<Aquila::Fft> fft = Aquila::FftFactory::getFft(signal.size());
 
@@ -10,7 +10,7 @@ void Filter::filter(const Signal& signal, Aquila::SpectrumType& spectrum)
     filter(spectrum, signal.sampleRate);
 }
 
-void Filter::filter(Signal& signal)
+void Filter::filter(Signal& signal) const
 {
     std::shared_ptr<Aquila::Fft> fft = Aquila::FftFactory::getFft(signal.size());
     Aquila::SpectrumType spectrum = fft->fft(signal.samples());

@@ -8,20 +8,20 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         const std::vector<std::vector<Signal>>& modulationSignals,
         std::vector<double>& statistics)
 {
-    computeStatistics(cochlearEnvelopes, modulationSignals, statistics, nullptr);
+    computeStatistics(cochlearEnvelopes, modulationSignals, statistics, nullptr, nullptr);
 }
 
 void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
-        std::vector<double>& statistics,
+        std::vector<double>& statistics, const FilterBank& modBank,
         std::vector<std::vector<std::vector<double>>> jacobian)
 {
-    computeStatistics(cochlearEnvelopes, modulationSignals, statistics, &jacobian);
+    computeStatistics(cochlearEnvelopes, modulationSignals, statistics, &modBank, &jacobian);
 }
 
 void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
-        std::vector<double>& statistics,
+        std::vector<double>& statistics, const FilterBank* modBank,
         std::vector<std::vector<std::vector<double>>>* jacobian)
 {
     // TODO: optimize vector handling
@@ -73,8 +73,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         moments.push_back(nthMoment(realPart, 2, mean, variance));
         moments.push_back(nthMoment(realPart, 3, mean, variance));
         moments.push_back(nthMoment(realPart, 4, mean, variance));
-        for(int i = 0; i < 4; i++)
-            statistics.push_back(moments[i]);   // find method for this when there's internet
+        statistics.insert(statistics.end(), moments.begin(), moments.end());
         if(jacobian)
         {
             std::vector<std::vector<double>> secondMomentGrad;
@@ -134,6 +133,10 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 
     for(int i = 0; i < numEnvelopes; i++)
     {
+        double envVariance = cochlearVariances[i];
+        double envMean = cochlearMeans[i];
+        std::vector<double> envRealPart = cochlearEnvelopes[i].realPart();
+
         for(int j = 0; j < modulationSize; j++)
         {
             realPart = modulationSignals[i][j].realPart();
@@ -148,8 +151,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                 for(int env = 0; env < numEnvelopes; env++)
                 {
                     if(env == i)
-                        // TODO: pass appropriate filter to computePowerGrad
-                        powerGrad.push_back(computePowerGrad(modulationSignals[i][j], mean, variance));
+                        powerGrad.push_back(computePowerGrad(envRealPart, modulationSignals[i][j],
+                                    *(modBank->getFilter(j)), envMean, envVariance));
                     else
                         powerGrad.push_back(zeros);
                 }
@@ -401,30 +404,27 @@ double StatsGenerator::computePower(const std::vector<double>& data, double vari
         return p;
 }
 
-std::vector<double> StatsGenerator::computePowerGrad(const Signal& data, const Filter& filter,
-        double mean, double variance)
+std::vector<double> StatsGenerator::computePowerGrad(const std::vector<double>& data, const Signal& modSignal,
+        const Filter& filter, double mean, double variance)
 {
     int size = data.size();
     std::vector<double> grad;
     double sizeInv = 1.0 / size;
 
-    Signal fData(data);
-    filter.filter(fData);
-    double sqFilteredMean = 0;
+    Signal filteredModSignal(modSignal);
+    double sqrMean = 0;
     for(int i = 0; i < size; i++)
     {
-        sqFilteredMean += pow(std::real(fData[i]), 2);
-        fData[i] *= sizeInv;
+        sqrMean += pow(std::real(modSignal[i]), 2);
+        filteredModSignal[i] *= sizeInv;
     }
-    sqFilteredMean *= sizeInv;
-    
-    Signal ffData(fdata);
-    filter.filter(ffdata);
+    sqrMean *= sizeInv;
+    filter.filter(filteredModSignal);
 
     for(int i = 0; i < size; i++)
     {
-        grad[i] = (2 * variance * ffData - 2 * sqFilteredMean
-            * (std::real(data[i]) - mean) * sizeInv) / pow(variance, 2);
+        grad[i] = (2 * variance * std::real(filteredModSignal[i]) - 2 * sqrMean
+            * (data[i] - mean) * sizeInv) / pow(variance, 2);
     }
 
     return grad;
