@@ -26,6 +26,7 @@ namespace TextureSynthesis
         void makeEnvelope(Signal& phase);
 
         void pow(double a);
+        void scale(double s);
 
         std::vector<double> realPart() const;
         std::vector<double> imaginaryPart() const;

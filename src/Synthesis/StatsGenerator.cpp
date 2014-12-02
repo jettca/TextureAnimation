@@ -177,10 +177,9 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                     {
                         if(env == i || env == j)
                             ijnC1CorrelationGrad.push_back(c1ModulationCorrelationGrad(
-                                    modulationSignals[i][n].realPart(),
-                                    modulationSignals[j][n].realPart(),
-                                    modulationVariances[i][n], modulationVariances[j][n],
-                                    env == i));
+                                    modulationSignals[i][n], modulationSignals[j][n],
+                                    *(modBank->getFilter(i)), modulationVariances[i][n],
+                                    modulationVariances[j][n], env == i));
                         else
                             ijnC1CorrelationGrad.push_back(zeros);
                     }
@@ -444,11 +443,48 @@ double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
         return c / (size * variance1 * variance2);
 }
 
-std::vector<double> StatsGenerator::c1ModulationCorrelationGrad(
-        const std::vector<double>& data1, const std::vector<double>& data2,
-        double variance1, double variance2, bool varyingData1)
+std::vector<double> StatsGenerator::c1ModulationCorrelationGrad(const Signal& modSignal1,
+        const Signal& modSignal2, const Filter& filter, double variance1,
+        double variance2, bool varyingData1)
 {
-    std::vector<double> grad(data1.size());
+    int size = std::min(modSignal1.size(), modSignal2.size());
+    double sizeInv = 1.0 / size;
+    std::vector<double> grad(size);
+
+    const Signal *varying, *fixed;
+    double varyingVar, fixedVar;
+    if(varyingData1)
+    {
+        varying = &modSignal1; fixed = &modSignal2;
+        varyingVar = variance1; fixedVar = variance2;
+    }
+    else
+    {
+        varying = &modSignal2; fixed = &modSignal1;
+        varyingVar = variance2; fixedVar = variance1;
+    }
+
+    double varyingStdDev = sqrt(varyingVar);
+    double fixedStdDev = sqrt(fixedVar);
+
+    Signal filteredVarying(*varying);
+    Signal filteredFixed(*fixed);
+
+    filteredVarying.scale(sizeInv);
+    filteredFixed.scale(sizeInv);
+
+    filter.filter(filteredVarying);
+    filter.filter(filteredFixed);
+
+    double cbc = 0;
+    for(int i = 0; i < size; i++)
+        cbc += std::real((*varying)[i]) * std::real((*fixed)[i]) * sizeInv;
+    cbc /= varyingStdDev * fixedStdDev;
+
+    for(int i = 0; i < size; i++)
+        grad[i] = std::real(filteredFixed[i]) / (varyingStdDev * fixedStdDev)
+            - cbc / pow(varyingStdDev, 2) * std::real(filteredVarying[i]);
+
     return grad;
 }
 

@@ -64,10 +64,15 @@ void Signal::pow(double a)
 {
     int signalSize = _signal.size();
     for(int i = 0; i < signalSize; i++)
-    {
         if(std::real(_signal[i]) != 0 && std::imag(_signal[i]) != 0)
             _signal[i] = std::pow(_signal[i], a);
-    }
+}
+
+void Signal::scale(double s)
+{
+    int signalSize = _signal.size();
+    for(int i = 0; i < signalSize; i++)
+        _signal[i] *= s;
 }
 
 std::vector<double> Signal::realPart() const

@@ -53,9 +53,9 @@ namespace TextureSynthesis
 
         double c1ModulationCorrelation(const std::vector<double>& data1,
                 const std::vector<double>& data2, double variance1, double variance2);
-        std::vector<double> c1ModulationCorrelationGrad(const std::vector<double>& data1,
-                const std::vector<double>& data2, double variance1, double variance2,
-                bool varyingData1);
+        std::vector<double> c1ModulationCorrelationGrad(const Signal& modSignal1,
+                const Signal& modSignal2, const Filter& filter, double variance1,
+                double variance2, bool varyingData1);
 
         std::complex<double> c2ModulationCorrelation(const Signal& signal1,
                 const Signal& signal2, double variance1, double variance2);
