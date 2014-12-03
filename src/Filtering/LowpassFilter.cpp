@@ -15,14 +15,10 @@ void LowpassFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate) co
     int numlow = size * _lowpassFrequency / sampleRate;
     for(int i = 0; i < numlow; i++)
         filterSpectrum[i] = 1;
-    for(int i = numlow; i < size; i++)
+    for(int i = numlow; i < size / 2; i++)
         filterSpectrum[i] = 0;
 
-    std::transform(
-        std::begin(spectrum),
-        std::end(spectrum),
-        std::begin(filterSpectrum),
-        std::begin(spectrum),
-        [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y; }
-    );
+    std::transform(std::begin(spectrum), std::end(spectrum),
+            std::begin(filterSpectrum), std::begin(spectrum),
+            [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y; });
 }

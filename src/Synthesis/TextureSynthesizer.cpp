@@ -22,13 +22,13 @@ void OptimizationData::initialize(TextureSynthesizer& synthesizer,
 
     // Initialize target statistics from target signal
     textureFilterer.auditoryFilter(synthesizer._targetSignal, cochlearEnvelopes,
-            modulationSignals, true);
+            modulationSignals, false);
     statsGenerator.computeStatistics(cochlearEnvelopes, modulationSignals,
             targetStats);
 
     // Initialize temporary statistics
     textureFilterer.auditoryFilter(initialSignal, cochlearEnvelopes,
-            modulationSignals, false);
+            modulationSignals, true);
     statsGenerator.computeStatistics(cochlearEnvelopes, modulationSignals,
             currentStats);
 }
@@ -36,14 +36,12 @@ void OptimizationData::initialize(TextureSynthesizer& synthesizer,
 TextureSynthesizer::TextureSynthesizer(const Signal& targetSignal) :
     _targetSignal(targetSignal),
     _curOptimizationData(),
-    _stepSize(1000),
+    _stepSize(10),
     _tolerance(.1)
 { }
 
 void TextureSynthesizer::synthesize(Signal& outSignal)
 {
-    // TODO: figure out why it's not optimizing
-
     // Calculate the size and sample rate of outSignal's envelopes after downsampling
     std::pair<int, double> downsampleSizeAndRate =
         Downsampler::newSizeAndRate(outSignal.size(), outSignal.sampleRate,
@@ -63,20 +61,21 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
     // Initialize the parameters of our gsl minimizer function
     gsl_multimin_function_fdf statmin;
     statmin.n = downsampleSize * TextureFilterer::numCochlearEnvelopes();
-    statmin.f = &distanceFromTarget;
+    statmin.f = &distance;
     statmin.df = &gradient;
     statmin.fdf = &gradAndDist;
     statmin.params = &_curOptimizationData;
 
     // Set the initial guess for gradient descent
     gsl_vector *init = gsl_vector_alloc(statmin.n);
-    for(int i = 0; i < statmin.n; i++)
-        gsl_vector_set(init, i, std::real(_curOptimizationData.cochlearEnvelopes
-                    [i / downsampleSize][i % downsampleSize]));
+    for(int i = 0; i < TextureFilterer::numCochlearEnvelopes(); i++)
+        for(int j = 0; j < downsampleSize; j++)
+            gsl_vector_set(init, downsampleSize * i + j,
+                    std::real(_curOptimizationData.cochlearEnvelopes[i][j]));
 
     // Initialize the gsl minimizer
     gsl_multimin_fdfminimizer *s;
-    s = gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, statmin.n);
+    s = gsl_multimin_fdfminimizer_alloc(gsl_multimin_fdfminimizer_conjugate_fr, statmin.n);
     gsl_multimin_fdfminimizer_set(s, &statmin, init, _stepSize, _tolerance);
 
     // Run minimization loop
@@ -87,20 +86,22 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
         iter++;
         std::cout << "iter: " << iter << "\n";
         status = gsl_multimin_fdfminimizer_iterate(s);
-    }
-    while (status == GSL_CONTINUE && iter < 5);
-    std::cout << "End status: " << status << "\n";
+        printf("status: %s\n", gsl_strerror(status));
 
-    // Convert results into output signal
+    }
+    while(iter < 40);
+
+    // Convert into output signal
     _curOptimizationData.textureFilterer.recombine(_curOptimizationData.cochlearEnvelopes,
-            outSignal);
+           outSignal); 
+
 
     // Cleanup
     gsl_multimin_fdfminimizer_free(s);
     gsl_vector_free(init);
 }
 
-double TextureSynthesizer::distanceFromTarget(const gsl_vector *v, void *params)
+double TextureSynthesizer::distance(const gsl_vector *v, void *params)
 {
     // Grab cochlear envelopes from optimization data
     OptimizationData *data = (OptimizationData*)params;
@@ -113,49 +114,20 @@ double TextureSynthesizer::distanceFromTarget(const gsl_vector *v, void *params)
         for(int j = 0; j < envelopeSize; j++)
             (*cochlearEnvelopes)[i][j] = gsl_vector_get(v, envelopeSize * i + j);
 
-    // Shell out to other overload
-    return distanceFromTarget(data);
-}
-
-double TextureSynthesizer::distanceFromTarget(OptimizationData *data)
-{
-    return distanceFromTarget(data, nullptr);
-}
-
-double TextureSynthesizer::distanceFromTarget(OptimizationData *data, gsl_vector *df)
-{
     // Compute new modulation signals and statistics from updated envelopes
     data->textureFilterer.modulationFilter(data->cochlearEnvelopes, data->modulationSignals);
-    if(df)
-        data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
-                data->currentStats, data->textureFilterer.modulationBank(), data->jacobian);
-    else
-        data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
-                data->currentStats);
+    data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
+            data->currentStats);
 
     // Compute distance gradient from jacobian of statistics function
     int numStats = data->targetStats.size();
-    if(df)
-    {
-        int numEnvelopes = data->cochlearEnvelopes.size();
-        int envelopeSize = data->cochlearEnvelopes[0].size();
-
-        double gradient;
-        for(int env = 0; env < numEnvelopes; env++)
-            for(int sample = 0; sample < envelopeSize; sample++)
-            {
-                gradient = 0;
-                for(int stat = 0; stat < numStats; stat++)
-                    gradient += 2 * data->currentStats[stat] * data->jacobian[stat][env][sample];
-                gsl_vector_set(df, env * envelopeSize + sample, gradient);
-            }
-    }
 
     // Sum up L2 distance between current stats and target stats
     double distance = 0;
     for(int i = 0; i < numStats; i++)
         distance += pow(data->currentStats[i] - data->targetStats[i], 2);
 
+    std::cout << "distance: " << distance << "\n";
     return distance;
 }
 
@@ -175,14 +147,26 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
         for(int j = 0; j < envelopeSize; j++)
             (data->cochlearEnvelopes)[i][j] = gsl_vector_get(v, i * envelopeSize + j);
 
-    // calculate distance and fill in gradient
-    distanceFromTarget(data, df);
+    data->textureFilterer.modulationFilter(data->cochlearEnvelopes, data->modulationSignals);
+    data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,
+            data->currentStats, data->textureFilterer.modulationBank(), data->jacobian);
+
+    int numStats = data->targetStats.size();
+    double gradient;
+    for(int env = 0; env < numEnvelopes; env++)
+        for(int sample = 0; sample < envelopeSize; sample++)
+        {
+            gradient = 0;
+            for(int stat = 0; stat < numStats; stat++)
+                gradient += 2 * (data->currentStats[stat] - data->targetStats[stat])
+                    * data->jacobian[stat][env][sample];
+            gsl_vector_set(df, env * envelopeSize + sample, gradient);
+        }
 }
 
 void TextureSynthesizer::gradAndDist(const gsl_vector *v, void *params, double *f,
         gsl_vector *df)
 {
-    *f = distanceFromTarget(v, params);
-    std::cout << "distance: " << *f << "\n";
+    *f = distance(v, params);
     gradient(v, params, df);
 }

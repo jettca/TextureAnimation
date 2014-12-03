@@ -67,12 +67,8 @@ namespace TextureSynthesis
 
         /* Gradient descent functions
          */
-        static double distanceFromTarget(const gsl_vector *v, void *params);
-        static double distanceFromTarget(OptimizationData *data);
-        static double distanceFromTarget(OptimizationData *data, gsl_vector *df);
+        static double distance(const gsl_vector *v, void *params);
         static void gradient(const gsl_vector *v, void *params, gsl_vector *df);
         static void gradAndDist(const gsl_vector *v, void *params, double *f, gsl_vector *df);
-        static double partialDerivative(OptimizationData *data, int curEnvelope,
-                int curSample);
     };
 }
