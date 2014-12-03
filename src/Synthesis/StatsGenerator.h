@@ -16,7 +16,7 @@ namespace TextureSynthesis
         void computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
                 const std::vector<std::vector<Signal>>& modulationSignals,
                 std::vector<double>& statistics, const FilterBank& modBank,
-                std::vector<std::vector<std::vector<double>>> jacobian);
+                std::vector<std::vector<std::vector<double>>>& jacobian);
 
         void computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
                 const std::vector<std::vector<Signal>>& modulationSignals,

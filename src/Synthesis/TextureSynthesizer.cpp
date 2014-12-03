@@ -37,11 +37,13 @@ TextureSynthesizer::TextureSynthesizer(const Signal& targetSignal) :
     _targetSignal(targetSignal),
     _curOptimizationData(),
     _stepSize(1000),
-    _tolerance(10000)
+    _tolerance(.1)
 { }
 
 void TextureSynthesizer::synthesize(Signal& outSignal)
 {
+    // TODO: figure out why it's not optimizing
+
     // Calculate the size and sample rate of outSignal's envelopes after downsampling
     std::pair<int, double> downsampleSizeAndRate =
         Downsampler::newSizeAndRate(outSignal.size(), outSignal.sampleRate,
@@ -173,13 +175,14 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
         for(int j = 0; j < envelopeSize; j++)
             (data->cochlearEnvelopes)[i][j] = gsl_vector_get(v, i * envelopeSize + j);
 
-    // Calculate initial objective function value
-    double initialDistance = distanceFromTarget(data, df);
+    // calculate distance and fill in gradient
+    distanceFromTarget(data, df);
 }
 
 void TextureSynthesizer::gradAndDist(const gsl_vector *v, void *params, double *f,
         gsl_vector *df)
 {
     *f = distanceFromTarget(v, params);
+    std::cout << "distance: " << *f << "\n";
     gradient(v, params, df);
 }

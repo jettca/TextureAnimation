@@ -14,7 +14,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelopes,
         const std::vector<std::vector<Signal>>& modulationSignals,
         std::vector<double>& statistics, const FilterBank& modBank,
-        std::vector<std::vector<std::vector<double>>> jacobian)
+        std::vector<std::vector<std::vector<double>>>& jacobian)
 {
     computeStatistics(cochlearEnvelopes, modulationSignals, statistics, &modBank, &jacobian);
 }
@@ -25,7 +25,6 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         std::vector<std::vector<std::vector<double>>>* jacobian)
 {
     // TODO: optimize vector handling
-    // TODO: finish implementing gradient functions
 
     // Cochlear statistics
 
@@ -122,7 +121,6 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
             }
     }
 
-
     // Modulation statistics
 
     int modulationSize = modulationSignals[0].size();
@@ -178,7 +176,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
                         if(env == i || env == j)
                             ijnC1CorrelationGrad.push_back(c1ModulationCorrelationGrad(
                                     modulationSignals[i][n], modulationSignals[j][n],
-                                    *(modBank->getFilter(i)), modulationVariances[i][n],
+                                    *(modBank->getFilter(n)), modulationVariances[i][n],
                                     modulationVariances[j][n], env == i));
                         else
                             ijnC1CorrelationGrad.push_back(zeros);
@@ -372,8 +370,10 @@ std::vector<double> StatsGenerator::crossCorrelationGrad(const std::vector<doubl
         varyingVar = variance2; fixedVar = variance1;
     }
 
-    double varyingStdDev = sqrt(varyingVar);
-    double fixedStdDev = sqrt(fixedVar);
+    double varyingStdDev = sqrt(varyingVar) + 1e-10;
+    double fixedStdDev = sqrt(fixedVar) + 1e-10;
+
+    // TODO: why is one of the variances always zero?
 
     double cbc = 0;
     for(int i = 0; i < size; i++)
@@ -408,7 +408,7 @@ std::vector<double> StatsGenerator::computePowerGrad(const std::vector<double>& 
         const Filter& filter, double mean, double variance)
 {
     int size = data.size();
-    std::vector<double> grad;
+    std::vector<double> grad(size);
     double sizeInv = 1.0 / size;
 
     Signal filteredModSignal(modSignal);
@@ -421,6 +421,7 @@ std::vector<double> StatsGenerator::computePowerGrad(const std::vector<double>& 
     sqrMean *= sizeInv;
     filter.filter(filteredModSignal);
 
+    variance += 1e-10;
     for(int i = 0; i < size; i++)
     {
         grad[i] = (2 * variance * std::real(filteredModSignal[i]) - 2 * sqrMean
@@ -465,8 +466,8 @@ std::vector<double> StatsGenerator::c1ModulationCorrelationGrad(const Signal& mo
         varyingVar = variance2; fixedVar = variance1;
     }
 
-    double varyingStdDev = sqrt(varyingVar);
-    double fixedStdDev = sqrt(fixedVar);
+    double varyingStdDev = sqrt(varyingVar) + 1e-10;
+    double fixedStdDev = sqrt(fixedVar) + 1e-10;
 
     Signal filteredVarying(*varying);
     Signal filteredFixed(*fixed);
