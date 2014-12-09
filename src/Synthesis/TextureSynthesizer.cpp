@@ -87,14 +87,14 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
         std::cout << "iter: " << iter << "\n";
         status = gsl_multimin_fdfminimizer_iterate(s);
         printf("status: %s\n", gsl_strerror(status));
-
     }
-    while(iter < 40);
+    while(iter < 50);
 
+    // TODO: figure out where to recombine more
+ 
     // Convert into output signal
     _curOptimizationData.textureFilterer.recombine(_curOptimizationData.cochlearEnvelopes,
            outSignal); 
-
 
     // Cleanup
     gsl_multimin_fdfminimizer_free(s);

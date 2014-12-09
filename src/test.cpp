@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
     // Load input file into Signal object with power of 2 length
     Aquila::WaveFile input(argv[1]);
-    int sourceLen = std::min(pow(2, (int)(log(input.getSamplesCount()) / log(2))), pow(2, 12));
+    int sourceLen = std::min(pow(2, (int)(log(input.getSamplesCount()) / log(2))), pow(2, 13));
     double sampleRate = input.getSampleFrequency();
     
     int numChannels = input.getChannelsNum();
