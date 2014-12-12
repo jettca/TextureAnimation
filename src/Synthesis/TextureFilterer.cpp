@@ -101,14 +101,12 @@ FilterBank TextureFilterer::generateModulationBank()
 {
     FilterBank modulationBank;
 
-    double scalar = 4.112 * exp(-7);
-    double offset = 0.5 - scalar;
-
     Filter *filter;
 
     for(int i = 0; i < _numModulationSignals; i++)
     {
-        filter = (Filter*)(new CochlearFilter(scalar * exp(i) + offset));
+        // TODO: make this actually correct
+        filter = (Filter*)(new CochlearFilter(pow(2, i + 1)));
         modulationBank.addFilter(std::shared_ptr<Filter>(filter));
     }
 
@@ -143,8 +141,8 @@ const FilterBank& TextureFilterer::modulationBank()
 FilterBank TextureFilterer::_cochlearBank = generateCochlearBank();
 FilterBank TextureFilterer::_modulationBank = generateModulationBank();
 
-int TextureFilterer::_numCochlearEnvelopes      = 32;
-int TextureFilterer::_numModulationSignals      = 20;
-double TextureFilterer::_targetDownsampleRate   = 400;
-double TextureFilterer::_cochlearExponent       = -0.3;
-double TextureFilterer::_oneOverCochlearExponent = 1 / _cochlearExponent;
+int     TextureFilterer::_numCochlearEnvelopes      = 32;
+int     TextureFilterer::_numModulationSignals      = 7;
+double  TextureFilterer::_targetDownsampleRate      = 400;
+double  TextureFilterer::_cochlearExponent          = -0.3;
+double  TextureFilterer::_oneOverCochlearExponent   = 1 / _cochlearExponent;

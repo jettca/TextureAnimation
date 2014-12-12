@@ -10,6 +10,8 @@ CochlearFilter::CochlearFilter(double centerFrequency)
 
 void CochlearFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate) const
 {
+    // TODO: optimize by fixing sampleRate and computing filterSpectrum in constructor
+
     int size = spectrum.size();
     Aquila::SpectrumType filterSpectrum(size);
     double frequency;
@@ -28,10 +30,17 @@ void CochlearFilter::filter(Aquila::SpectrumType& spectrum, double sampleRate) c
 
     for(int i = 0; i < cosStart; i++)
         filterSpectrum[i] = 0;
+    double maxFreq = 0;
+    double maxVal = 0;
     for(int i = cosStart; i < cosEnd; i++)
     {
         frequency = sampleRate / size * i;
         filterSpectrum[i] = cos(angularFrequency * (frequency - _centerFrequency));
+        if(std::real(filterSpectrum[i]) > maxVal)
+        {
+            maxVal = std::real(filterSpectrum[i]);
+            maxFreq = frequency;
+        }
     }
     for(int i = cosEnd; i < size; i++)
         filterSpectrum[i] = 0;

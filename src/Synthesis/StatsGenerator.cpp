@@ -120,8 +120,6 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 
     // Modulation statistics
 
-    // TODO: fix modulation filters (?)
-
     int modulationSize = modulationSignals[0].size();
 
     double defaultVariance = -1;
@@ -158,84 +156,83 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
         }
     }
 
+    // magic numbers here are presecribed in paper
+    for(int i = 2; i < numEnvelopes; i++)
+        for(int j = i - 1; j >= i - 2; j--)
+            for(int n = 1; n < 7; n++)
+            {
+                statistics.push_back(c1ModulationCorrelation(
+                            modulationSignals[i][n].realPart(),
+                            modulationSignals[j][n].realPart(),
+                            modulationVariances[i][n], modulationVariances[j][n]));
+                if(jacobian)
+                {
+                    std::vector<std::vector<double>> ijnC1CorrelationGrad;
+                    for(int env = 0; env < numEnvelopes; env++)
+                    {
+                        if(env == i || env == j)
+                            ijnC1CorrelationGrad.push_back(c1ModulationCorrelationGrad(
+                                    modulationSignals[i][n], modulationSignals[j][n],
+                                    *(modBank->getFilter(n)), modulationVariances[i][n],
+                                    modulationVariances[j][n], env == i));
+                        else
+                            ijnC1CorrelationGrad.push_back(zeros);
+                    }
+                    jacobian->push_back(ijnC1CorrelationGrad);
+                }
+            }
+
     // TODO: make this section converge
 
-//    // magic numbers here are presecribed in paper
-//    for(int i = 2; i < numEnvelopes; i++)
-//        for(int j = i - 1; j >= i - 2; j--)
-//            for(int n = 1; n < 7; n++)
-//            {
-//                statistics.push_back(c1ModulationCorrelation(
-//                            modulationSignals[i][n].realPart(),
-//                            modulationSignals[j][n].realPart(),
-//                            modulationVariances[i][n], modulationVariances[j][n]));
-//                if(jacobian)
-//                {
-//                    std::vector<std::vector<double>> ijnC1CorrelationGrad;
-//                    for(int env = 0; env < numEnvelopes; env++)
-//                    {
-//                        if(env == i || env == j)
-//                            ijnC1CorrelationGrad.push_back(c1ModulationCorrelationGrad(
-//                                    modulationSignals[i][n], modulationSignals[j][n],
-//                                    *(modBank->getFilter(n)), modulationVariances[i][n],
-//                                    modulationVariances[j][n], env == i));
-//                        else
-//                            ijnC1CorrelationGrad.push_back(zeros);
-//                    }
-//                    jacobian->push_back(ijnC1CorrelationGrad);
-//                }
-//            }
-//
-//    int numC2s = 6;
-//    std::vector<Signal> analyticModSignals;
-//    for(int n = 0; n <= numC2s; n++)
-//        analyticModSignals.push_back(Signal(signalLength, sampleRate));
-//
-//    std::complex<double> c2Corr;
-//    std::vector<std::complex<double>> c2CorrGrad;
-//    for(int i = 0; i < numEnvelopes; i++)
-//    {
-//        for(int n = 0; n <= numC2s; n++)
-//        {
-//            analyticModSignals[n].set(modulationSignals[i][n]);
-//            analyticModSignals[n].makeAnalytic();
-//        }
-//        for(int n = 0; n < numC2s; n++)
-//        {
-//            c2Corr = c2ModulationCorrelation(analyticModSignals[n],
-//                    analyticModSignals[n + 1], modulationVariances[i][n],
-//                    modulationVariances[i][n + 1]);
-//            statistics.push_back(std::real(c2Corr));
-//            statistics.push_back(std::imag(c2Corr));
-//            if(jacobian)
-//            {
-//                std::vector<std::vector<double>> inC2CorrelationRealGrad(numEnvelopes);
-//                std::vector<std::vector<double>> inC2CorrelationImagGrad(numEnvelopes);
-//                for(int env = 0; env < numEnvelopes; env++)
-//                {
-//                    if(env == n || env == n + 1)
-//                    {
-//                        c2CorrGrad = c2ModulationCorrelationGrad(analyticModSignals[n],
-//                            analyticModSignals[n + 1], modulationVariances[i][n],
-//                            modulationVariances[i][n + 1], *(modBank->getFilter(n)),
-//                            *(modBank->getFilter(n + 1)), env == n);
-//                        for(std::complex<double> c2Val : c2CorrGrad)
-//                        {
-//                            inC2CorrelationRealGrad[env].push_back(std::real(c2Val));
-//                            inC2CorrelationImagGrad[env].push_back(std::imag(c2Val));
-//                        }
-//                    }
-//                    else
-//                    {
-//                        inC2CorrelationRealGrad[env] = zeros;
-//                        inC2CorrelationImagGrad[env] = zeros;
-//                    }
-//                }
-//                jacobian->push_back(inC2CorrelationRealGrad);
-//                jacobian->push_back(inC2CorrelationImagGrad);
-//            }
-//        }
-//    }
+    int numC2s = 6;
+    std::vector<Signal> analyticModSignals;
+    for(int n = 0; n <= numC2s; n++)
+        analyticModSignals.push_back(Signal(signalLength, sampleRate));
+
+    for(int i = 0; i < numEnvelopes; i++)
+    {
+        for(int n = 0; n <= numC2s; n++)
+        {
+            analyticModSignals[n].set(modulationSignals[i][n]);
+            analyticModSignals[n].makeAnalytic();
+        }
+        for(int n = 0; n < numC2s; n++)
+        {
+            std::complex<double> c2Corr = c2ModulationCorrelation(analyticModSignals[n],
+                    analyticModSignals[n + 1], modulationVariances[i][n],
+                    modulationVariances[i][n + 1]);
+            statistics.push_back(std::real(c2Corr));
+            statistics.push_back(std::imag(c2Corr));
+            if(jacobian)
+            {
+                std::vector<std::vector<double>> inC2CorrelationRealGrad(numEnvelopes);
+                std::vector<std::vector<double>> inC2CorrelationImagGrad(numEnvelopes);
+                for(int env = 0; env < numEnvelopes; env++)
+                {
+                    if(env == n || env == n + 1)
+                    {
+                        std::vector<std::complex<double>> c2CorrGrad =
+                            c2ModulationCorrelationGrad(analyticModSignals[n],
+                                analyticModSignals[n + 1], modulationVariances[i][n],
+                                modulationVariances[i][n + 1], *(modBank->getFilter(n)),
+                                *(modBank->getFilter(n + 1)), env == n);
+                        for(std::complex<double> c2GradComponent : c2CorrGrad)
+                        {
+                            inC2CorrelationRealGrad[env].push_back(std::real(c2GradComponent));
+                            inC2CorrelationImagGrad[env].push_back(std::imag(c2GradComponent));
+                        }
+                    }
+                    else
+                    {
+                        inC2CorrelationRealGrad[env] = zeros;
+                        inC2CorrelationImagGrad[env] = zeros;
+                    }
+                }
+                jacobian->push_back(inC2CorrelationRealGrad);
+                jacobian->push_back(inC2CorrelationImagGrad);
+            }
+        }
+    }
 }
 
 double StatsGenerator::computeMean(const std::vector<double>& data)
@@ -335,11 +332,11 @@ double StatsGenerator::crossCorrelation(const std::vector<double>& data1,
 {
     int size = std::min(data1.size(), data2.size());
 
-    double c = 0;
+    double corr = 0;
     for(int i = 0; i < size; i++)
-        c += (data1[i] - mean1) * (data2[i] - mean2);
+        corr += (data1[i] - mean1) * (data2[i] - mean2);
 
-    return c / (size * sqrt(variance1 * variance2));
+    return corr / (size * sqrt(variance1 * variance2));
 }
 
 std::vector<double> StatsGenerator::crossCorrelationGrad(const std::vector<double>& data1,
@@ -417,10 +414,21 @@ double StatsGenerator::c1ModulationCorrelation(const std::vector<double>& data1,
 {
     int size = std::min(data1.size(), data2.size());
 
-    double c = 0;
+    double corr = 0;
     for(int i = 0; i < size; i++)
-        c += data1[i] * data2[i];
-    return c / (size * variance1 * variance2);
+        corr += data1[i] * data2[i];
+
+    double data1StdDev = 0;
+    double data2StdDev = 0;
+    for(int i = 0; i < size; i++)
+    {
+        data1StdDev += pow(data1[i], 2);
+        data2StdDev += pow(data2[i], 2);
+    }
+    data1StdDev = sqrt(data1StdDev / size);
+    data2StdDev = sqrt(data2StdDev / size);
+
+    return corr / (size * data1StdDev * data2StdDev);
 }
 
 std::vector<double> StatsGenerator::c1ModulationCorrelationGrad(const Signal& modSignal1,
@@ -444,8 +452,17 @@ std::vector<double> StatsGenerator::c1ModulationCorrelationGrad(const Signal& mo
         varyingVar = variance2; fixedVar = variance1;
     }
 
-    double varyingStdDev = sqrt(varyingVar);
-    double fixedStdDev = sqrt(fixedVar);
+    double cbc = c1ModulationCorrelation(varying->realPart(), fixed->realPart(),
+            varyingVar, fixedVar);
+    double varyingStdDev = 0;
+    double fixedStdDev = 0;
+    for(int i = 0; i < size; i++)
+    {
+        varyingStdDev += pow(std::real((*varying)[i]), 2);
+        fixedStdDev += pow(std::real((*fixed)[i]), 2);
+    }
+    varyingStdDev = sqrt(sizeInv * varyingStdDev);
+    fixedStdDev = sqrt(sizeInv * fixedStdDev);
 
     Signal filteredVarying(*varying);
     Signal filteredFixed(*fixed);
@@ -455,11 +472,6 @@ std::vector<double> StatsGenerator::c1ModulationCorrelationGrad(const Signal& mo
 
     filter.filter(filteredVarying);
     filter.filter(filteredFixed);
-
-    double cbc = 0;
-    for(int i = 0; i < size; i++)
-        cbc += std::real((*varying)[i]) * std::real((*fixed)[i]) * sizeInv;
-    cbc /= varyingStdDev * fixedStdDev;
 
     for(int i = 0; i < size; i++)
         grad[i] = std::real(filteredFixed[i]) / (varyingStdDev * fixedStdDev)
@@ -473,16 +485,20 @@ std::complex<double> StatsGenerator::c2ModulationCorrelation(const Signal& signa
 {
     int size = std::min(signal1.size(), signal2.size());
 
-    std::complex<double> c = 0;
+    std::complex<double> corr = 0;
+    double cStdDev = 0;
+    double signal2StdDev = 0;
     for(int i = 0; i < size; i++)
     {
-        double denom = std::norm(signal1[i]);
-        // TODO: how to handle divide-by-zero here?
-        if(denom > 1e-100)
-            c += std::conj(std::pow(signal1[i], 2) /
-                    denom) * signal2[i];
+        double c = std::real(std::pow(signal1[i], 2) / std::norm(signal1[i]));
+        corr += c * signal2[i];
+        cStdDev += pow(c, 2);
+        signal2StdDev += pow(std::real(signal2[i]), 2);
     }
-    return c / (size * variance1 * variance2);
+    cStdDev = sqrt(cStdDev / size);
+    signal2StdDev = sqrt(signal2StdDev / size);
+
+    return corr / (size * cStdDev * signal2StdDev);
 }
 
 std::vector<std::complex<double>> StatsGenerator::c2ModulationCorrelationGrad(const Signal& signal1,
@@ -494,92 +510,89 @@ std::vector<std::complex<double>> StatsGenerator::c2ModulationCorrelationGrad(co
     std::vector<std::complex<double>> grad(size);
 
     const Signal *varying, *fixed;
-    double varyingVar, fixedVar;
     const Filter *varyingFilter, *fixedFilter;
     if(varyingData1)
     {
         varying = &signal1; fixed = &signal2;
-        varyingVar = variance1; fixedVar = variance2;
         varyingFilter = &filter1; fixedFilter = &filter2;
     }
     else
     {
         varying = &signal2; fixed = &signal1;
-        varyingVar = variance2; fixedVar = variance1;
         varyingFilter = &filter2; fixedFilter = &filter1;
     }
 
     Signal varyingAnalytic(*varying);
-    Signal fixedAnalytic(*fixed);
     varyingAnalytic.makeAnalytic();
+
+    Signal fixedAnalytic(*fixed);
     fixedAnalytic.makeAnalytic();
-
-    Signal u(size, varyingAnalytic.sampleRate);
-    for(int i = 0; i < size; i++)
-    {
-        double norm = std::norm(varyingAnalytic[i]);
-        u[i] = 2 * pow(std::real(varyingAnalytic[i]), 2) / norm - norm;
-    }
-
-    std::vector<double> fa_real = fixedAnalytic.realPart();
-    std::vector<double> fa_imag = fixedAnalytic.imaginaryPart();
 
     double va_magnitude = 0;
     double fa_magnitude = 0;
     for(int i = 0; i < size; i++)
     {
-        va_magnitude += pow(sizeInv * std::real(varyingAnalytic[i]), 2);
-        fa_magnitude += pow(sizeInv * fa_real[i], 2);
+        va_magnitude += pow(std::real(varyingAnalytic[i]), 2);
+        fa_magnitude += pow(std::real(fixedAnalytic[i]), 2);
     }
-    va_magnitude = sqrt(va_magnitude);
-    fa_magnitude = sqrt(fa_magnitude);
+    va_magnitude = sqrt(sizeInv * va_magnitude);
+    fa_magnitude = sqrt(sizeInv * fa_magnitude);
 
-    std::vector<double> stuff_real = computeShit(varyingAnalytic, fa_real, *varyingFilter);
-    std::vector<double> stuff_imag = computeShit(varyingAnalytic, fa_imag, *varyingFilter);
+    std::vector<double> stuff_real = computeStuff(varyingAnalytic, fixedAnalytic.realPart(),
+            *varyingFilter);
+    std::vector<double> stuff_imag = computeStuff(varyingAnalytic, fixedAnalytic.imaginaryPart(),
+            *varyingFilter);
 
-    Signal stuff2(u);
-    stuff2.scale(sizeInv);
-    fixedFilter->filter(stuff2);
-    Signal stuff2_imag(stuff2);
-    stuff2_imag.makeAnalytic();
-    stuff2_imag.scale(-1);
-
+    Signal u(size, varyingAnalytic.sampleRate);
     double uReal = 0;
     double uImag = 0;
     for(int i = 0; i < size; i++)
     {
+        double norm = std::norm(varyingAnalytic[i]);
+        u[i] = 2 * pow(std::real(varyingAnalytic[i]), 2) / norm - norm;
         uReal += std::real(u[i]) * std::real(fixedAnalytic[i]) * sizeInv;
         uImag += std::real(u[i]) * std::imag(fixedAnalytic[i]) * sizeInv;
     }
 
+    u.scale(sizeInv);
+    fixedFilter->filter(u);
+
+    Signal uAnalytic(u);
+    uAnalytic.makeAnalytic();
+    uAnalytic.scale(-1);
+
     varyingAnalytic.scale(sizeInv);
-    fixedAnalytic.scale(sizeInv);
     varyingAnalytic.makeReal();
-    fixedAnalytic.makeReal();
     varyingFilter->filter(varyingAnalytic);
+
+    fixedAnalytic.scale(sizeInv);
+    fixedAnalytic.makeReal();
     fixedFilter->filter(fixedAnalytic);
 
-    std::complex<double> stuff3;
     for(int i = 0; i < size; i++)
     {
-        grad[i] = std::complex<double>(stuff_real[i] + std::real(stuff2[i]),
-                stuff_imag[i] + std::imag(stuff2_imag[i]));
-        grad[i] *= va_magnitude * fa_magnitude;
-        grad[i] -= std::complex<double>(uReal * fa_magnitude / va_magnitude,
-                uImag * va_magnitude / fa_magnitude) * varyingAnalytic[i] * fixedAnalytic[i];
-        grad[i] /= pow(va_magnitude, 2) + pow(fa_magnitude, 2);
+        std::complex<double> term1 = std::complex<double>
+            (stuff_real[i], stuff_imag[i]) * va_magnitude * fa_magnitude;
+
+        std::complex<double> term2 = std::complex<double>
+            (std::real(u[i]), std::imag(uAnalytic[i])) * va_magnitude * fa_magnitude;
+
+        std::complex<double> term3 = std::complex<double>
+            (uReal, uImag) * (fa_magnitude / va_magnitude * varyingAnalytic[i] +
+                    va_magnitude / fa_magnitude * fixedAnalytic[i]);
+
+        grad[i] = (term1 + term2 - term3) / (pow(va_magnitude, 2) + pow(fa_magnitude, 2));
     }
 
     return grad;
 }
 
 
-std::vector<double> StatsGenerator::computeShit(const Signal& varyingAnalytic,
+std::vector<double> StatsGenerator::computeStuff(const Signal& varyingAnalytic,
         const std::vector<double>& fa, const Filter& varyingFilter)
 {
-    int size = varyingAnalytic.size();
+    int size = std::min(varyingAnalytic.size(), fa.size());
     double sizeInv = 1.0 / size;
-    std::vector<double> stuff(size);
 
     Signal toFilter1(size, varyingAnalytic.sampleRate);
     Signal toFilter2(size, varyingAnalytic.sampleRate);
@@ -587,17 +600,16 @@ std::vector<double> StatsGenerator::computeShit(const Signal& varyingAnalytic,
     Signal toFilter4(size, varyingAnalytic.sampleRate);
     Signal toFilter5(size, varyingAnalytic.sampleRate);
 
-    double va_real, va_imag, va_norm;
     for(int i = 0; i < size; i++)
     {
-        va_real = std::real(varyingAnalytic[i]);
-        va_imag = std::imag(varyingAnalytic[i]);
-        va_norm = std::norm(varyingAnalytic[i]);
+        double va_real = std::real(varyingAnalytic[i]);
+        double va_imag = std::imag(varyingAnalytic[i]);
+        double va_norm = std::norm(varyingAnalytic[i]);
 
         toFilter1[i] = 4 * va_real / va_norm * sizeInv * fa[i];
-        toFilter2[i] = 2 * pow(va_real, 2) / pow(va_norm, 3) * va_real * sizeInv * fa[i];
-        toFilter3[i] = toFilter2[i] / va_real * va_imag;
-        toFilter4[i] = toFilter1[i] * 0.25;
+        toFilter2[i] = 2 * pow(va_real, 3) / pow(va_norm, 3) * sizeInv * fa[i];
+        toFilter3[i] = 2 * pow(va_real, 2) / pow(va_norm, 3) * va_imag * sizeInv * fa[i];
+        toFilter4[i] = va_real / va_norm * sizeInv * fa[i];
         toFilter5[i] = va_imag / va_norm * sizeInv * fa[i];
     }
 
@@ -609,6 +621,7 @@ std::vector<double> StatsGenerator::computeShit(const Signal& varyingAnalytic,
     varyingFilter.filter(toFilter5);
     toFilter5.makeAnalytic();
 
+    std::vector<double> stuff(size);
     for(int i = 0; i < size; i++)
         stuff[i] = std::real(toFilter1[i]) - std::real(toFilter2[i]) + std::imag(toFilter3[i])
             - std::real(toFilter4[i]) + std::imag(toFilter5[i]);

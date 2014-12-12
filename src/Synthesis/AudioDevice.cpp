@@ -14,7 +14,7 @@ void AudioDevice::play(const Signal& signal, std::function<void()> callback)
     _curUserDataP = std::shared_ptr<UserData>(new UserData(&signal, callback));
 
     SDL_AudioSpec desiredSpec, obtainedSpec;
-    desiredSpec.freq = signal._sampleRate;
+    desiredSpec.freq = signal.sampleRate;
     desiredSpec.format = AUDIO_S16;
     desiredSpec.channels = 1;
     desiredSpec.samples = 1024;
@@ -38,13 +38,13 @@ void AudioDevice::writeAudio(void *userDataVP, Uint8 *stream, int len)
     std::function<void()> callback = userDataP->_callback;
     int *signalPosP = &(userDataP->_signalPos);
 
-    int signalLen = signalP->_signal.size();
+    int signalLen = signalP->size();
     int streamPos;
 
     short sample;
     for(streamPos = 0; streamPos < len && *signalPosP < signalLen; streamPos+=2)
     {
-        sample = (short)std::real(signalP->_signal[*signalPosP]);
+        sample = (short)std::real((*signalP)[*signalPosP]);
         stream[streamPos] = sample & 0xFF;
         stream[streamPos + 1] = sample >> 8;
         (*signalPosP)++;

@@ -68,7 +68,6 @@ namespace TextureSynthesis
         static FilterBank _cochlearBank;
         static FilterBank _modulationBank;
 
-        // TODO: find better way to force correctness of _num* constants
         // Fixed filtering parameters
         static int _numCochlearEnvelopes;
         static int _numModulationSignals;
