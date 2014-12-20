@@ -40,6 +40,7 @@ int main(int argc, char **argv)
     Aquila::WaveFile input(argv[1]);
     int sourceLen = std::min(pow(2, (int)(log(input.getSamplesCount()) / log(2))), pow(2, 13));
     double sampleRate = input.getSampleFrequency();
+    std::cout << "length: 2^" << log(sourceLen) / log(2) << "\n";
     
     int numChannels = input.getChannelsNum();
     int maxValue = pow(2, input.getBitsPerSample() - 1) - 1;

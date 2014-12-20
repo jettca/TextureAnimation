@@ -36,7 +36,7 @@ void OptimizationData::initialize(TextureSynthesizer& synthesizer,
 TextureSynthesizer::TextureSynthesizer(const Signal& targetSignal) :
     _targetSignal(targetSignal),
     _curOptimizationData(),
-    _stepSize(10),
+    _stepSize(30),
     _tolerance(.1)
 { }
 
@@ -96,6 +96,9 @@ void TextureSynthesizer::synthesize(Signal& outSignal)
     _curOptimizationData.textureFilterer.recombine(_curOptimizationData.cochlearEnvelopes,
            outSignal); 
 
+    // TODO: compare spectrums of input and output
+    // then try running just on that frequency (filter input)
+
     // Cleanup
     gsl_multimin_fdfminimizer_free(s);
     gsl_vector_free(init);
@@ -146,6 +149,7 @@ void TextureSynthesizer::gradient(const gsl_vector *v, void *params, gsl_vector 
     for(int i = 0; i < numEnvelopes; i++)
         for(int j = 0; j < envelopeSize; j++)
             (data->cochlearEnvelopes)[i][j] = gsl_vector_get(v, i * envelopeSize + j);
+
 
     data->textureFilterer.modulationFilter(data->cochlearEnvelopes, data->modulationSignals);
     data->statsGenerator.computeStatistics(data->cochlearEnvelopes, data->modulationSignals,

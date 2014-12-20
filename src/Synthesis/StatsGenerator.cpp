@@ -44,6 +44,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 
     for(int i = 0; i < numEnvelopes; i++)
     {
+        double scalar = numEnvelopes - i;
         std::vector<double> realPart = cochlearEnvelopes[i].realPart();
 
         std::vector<double> moments;
@@ -183,56 +184,57 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
             }
 
     // TODO: make this section converge
+    // TODO: check correctness of gradient by finite difference method
 
-    int numC2s = 6;
-    std::vector<Signal> analyticModSignals;
-    for(int n = 0; n <= numC2s; n++)
-        analyticModSignals.push_back(Signal(signalLength, sampleRate));
-
-    for(int i = 0; i < numEnvelopes; i++)
-    {
-        for(int n = 0; n <= numC2s; n++)
-        {
-            analyticModSignals[n].set(modulationSignals[i][n]);
-            analyticModSignals[n].makeAnalytic();
-        }
-        for(int n = 0; n < numC2s; n++)
-        {
-            std::complex<double> c2Corr = c2ModulationCorrelation(analyticModSignals[n],
-                    analyticModSignals[n + 1], modulationVariances[i][n],
-                    modulationVariances[i][n + 1]);
-            statistics.push_back(std::real(c2Corr));
-            statistics.push_back(std::imag(c2Corr));
-            if(jacobian)
-            {
-                std::vector<std::vector<double>> inC2CorrelationRealGrad(numEnvelopes);
-                std::vector<std::vector<double>> inC2CorrelationImagGrad(numEnvelopes);
-                for(int env = 0; env < numEnvelopes; env++)
-                {
-                    if(env == n || env == n + 1)
-                    {
-                        std::vector<std::complex<double>> c2CorrGrad =
-                            c2ModulationCorrelationGrad(analyticModSignals[n],
-                                analyticModSignals[n + 1], modulationVariances[i][n],
-                                modulationVariances[i][n + 1], *(modBank->getFilter(n)),
-                                *(modBank->getFilter(n + 1)), env == n);
-                        for(std::complex<double> c2GradComponent : c2CorrGrad)
-                        {
-                            inC2CorrelationRealGrad[env].push_back(std::real(c2GradComponent));
-                            inC2CorrelationImagGrad[env].push_back(std::imag(c2GradComponent));
-                        }
-                    }
-                    else
-                    {
-                        inC2CorrelationRealGrad[env] = zeros;
-                        inC2CorrelationImagGrad[env] = zeros;
-                    }
-                }
-                jacobian->push_back(inC2CorrelationRealGrad);
-                jacobian->push_back(inC2CorrelationImagGrad);
-            }
-        }
-    }
+//    int numC2s = 6;
+//    std::vector<Signal> analyticModSignals;
+//    for(int n = 0; n <= numC2s; n++)
+//        analyticModSignals.push_back(Signal(signalLength, sampleRate));
+//
+//    for(int i = 0; i < numEnvelopes; i++)
+//    {
+//        for(int n = 0; n <= numC2s; n++)
+//        {
+//            analyticModSignals[n].set(modulationSignals[i][n]);
+//            analyticModSignals[n].makeAnalytic();
+//        }
+//        for(int n = 0; n < numC2s; n++)
+//        {
+//            std::complex<double> c2Corr = c2ModulationCorrelation(analyticModSignals[n],
+//                    analyticModSignals[n + 1], modulationVariances[i][n],
+//                    modulationVariances[i][n + 1]);
+//            statistics.push_back(std::real(c2Corr));
+//            statistics.push_back(std::imag(c2Corr));
+//            if(jacobian)
+//            {
+//                std::vector<std::vector<double>> inC2CorrelationRealGrad(numEnvelopes);
+//                std::vector<std::vector<double>> inC2CorrelationImagGrad(numEnvelopes);
+//                for(int env = 0; env < numEnvelopes; env++)
+//                {
+//                    if(env == n || env == n + 1)
+//                    {
+//                        std::vector<std::complex<double>> c2CorrGrad =
+//                            c2ModulationCorrelationGrad(analyticModSignals[n],
+//                                analyticModSignals[n + 1], modulationVariances[i][n],
+//                                modulationVariances[i][n + 1], *(modBank->getFilter(n)),
+//                                *(modBank->getFilter(n + 1)), env == n);
+//                        for(std::complex<double> c2GradComponent : c2CorrGrad)
+//                        {
+//                            inC2CorrelationRealGrad[env].push_back(std::real(c2GradComponent));
+//                            inC2CorrelationImagGrad[env].push_back(std::imag(c2GradComponent));
+//                        }
+//                    }
+//                    else
+//                    {
+//                        inC2CorrelationRealGrad[env] = zeros;
+//                        inC2CorrelationImagGrad[env] = zeros;
+//                    }
+//                }
+//                jacobian->push_back(inC2CorrelationRealGrad);
+//                jacobian->push_back(inC2CorrelationImagGrad);
+//            }
+//        }
+//    }
 }
 
 double StatsGenerator::computeMean(const std::vector<double>& data)
