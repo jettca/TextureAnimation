@@ -28,10 +28,7 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
 
     int signalLength = cochlearEnvelopes.at(0).size();
     double sampleRate = cochlearEnvelopes.at(0).sampleRate;
-
     int numEnvelopes = cochlearEnvelopes.size();
-
-    std::vector<int> correlationDifs { 1, 2, 3, 5, 8, 11, 16, 21 };
 
     std::vector<double> cochlearMeans(numEnvelopes);
     std::vector<double> cochlearVariances(numEnvelopes);
@@ -41,6 +38,8 @@ void StatsGenerator::computeStatistics(const std::vector<Signal>& cochlearEnvelo
     std::vector<double> zeros;
     for(int i = 0; i < cochlearEnvelopes[0].size(); i++)
         zeros.push_back(0);
+
+    std::vector<int> correlationDifs { 1, 2, 3, 5, 8, 11, 16, 21 };
 
     for(int i = 0; i < numEnvelopes; i++)
     {
